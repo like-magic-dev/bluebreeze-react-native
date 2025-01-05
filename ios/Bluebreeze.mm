@@ -14,9 +14,19 @@
         [self emitAuthorizationStatusEmitter:status];
       }
     }];
+    [impl stateObserveOnChanged:^(NSString * _Nonnull status) {
+      if (self->_eventEmitterCallback != nil) {
+        [self emitStateEmitter:status];
+      }
+    }];
     [impl scanningEnabledObserveOnChanged:^(BOOL status) {
       if (self->_eventEmitterCallback != nil) {
         [self emitScanningEnabledEmitter:status];
+      }
+    }];
+    [impl devicesObserveOnChanged:^(NSArray<id<NSObject>> *devices) {
+      if (self->_eventEmitterCallback != nil) {
+        [self emitDevicesEmitter:devices];
       }
     }];
   }
@@ -39,6 +49,10 @@ RCT_EXPORT_MODULE()
   [impl authorizationRequest];
 }
 
+- (NSString *)state {
+  return [impl state];
+}
+
 - (NSNumber *)scanningEnabled {
   return [NSNumber numberWithBool:[impl scanningEnabled]];
 }
@@ -51,5 +65,8 @@ RCT_EXPORT_MODULE()
   [impl scanningStop];
 }
 
+- (NSArray<id<NSObject>> *)devices {
+  return [impl devices];
+}
 
 @end
