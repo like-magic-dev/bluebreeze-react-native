@@ -3,8 +3,9 @@
 
 @implementation BlueBreeze {
     BlueBreezeImpl* impl;
-    NSMutableArray<NSString*>* trackedDeviceConnectionStatus;
     NSMutableArray<NSString*>* trackedDeviceServices;
+    NSMutableArray<NSString*>* trackedDeviceConnectionStatus;
+    NSMutableArray<NSString*>* trackedDeviceMTU;
 }
 
 - (instancetype) init {
@@ -33,6 +34,17 @@
         [impl devicesObserveOnChanged:^(NSArray<id<NSObject>> *devices) {
             for (id device in devices) {
                 NSString* deviceId = device[@"id"];
+
+                if ([self->trackedDeviceServices indexOfObject:deviceId] == NSNotFound) {
+                    [self->trackedDeviceServices addObject:deviceId];
+                    [self->impl deviceServicesObserveWithId:deviceId onChanged:^(NSArray<id<NSObject>> * _Nonnull value) {
+                        [self emitDeviceServicesEmitter:@{
+                            @"id": deviceId,
+                            @"value": value
+                        }];
+                    }];
+                }
+                
                 if ([self->trackedDeviceConnectionStatus indexOfObject:deviceId] == NSNotFound) {
                     [self->trackedDeviceConnectionStatus addObject:deviceId];
                     [self->impl deviceConnectionStatusObserveWithId:deviceId onChanged:^(NSString * _Nonnull value) {
@@ -42,12 +54,13 @@
                         }];
                     }];
                 }
-                if ([self->trackedDeviceServices indexOfObject:deviceId] == NSNotFound) {
-                    [self->trackedDeviceServices addObject:deviceId];
-                    [self->impl deviceServicesObserveWithId:deviceId onChanged:^(NSArray<id<NSObject>> * _Nonnull value) {
-                        [self emitDeviceServicesEmitter:@{
+
+                if ([self->trackedDeviceMTU indexOfObject:deviceId] == NSNotFound) {
+                    [self->trackedDeviceMTU addObject:deviceId];
+                    [self->impl deviceMTUObserveWithId:deviceId onChanged:^(NSInteger value) {
+                        [self emitDeviceMTUEmitter:@{
                             @"id": deviceId,
-                            @"value": value
+                            @"value": [NSNumber numberWithInt:value]
                         }];
                     }];
                 }

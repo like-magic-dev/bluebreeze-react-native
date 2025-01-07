@@ -70,14 +70,43 @@ struct BlueBreezeError : Error {
 
     // MARK: - Devices
 
-    @objc public func devices() -> [NSDictionary] {
+    @objc public func devices() -> [Dictionary<String, Any>] {
         return manager.devices.value.values.map { $0.export }
     }
 
-    @objc public func devicesObserve(onChanged: @escaping ([NSDictionary]) -> Void) {
+    @objc public func devicesObserve(onChanged: @escaping ([Dictionary<String, Any>]) -> Void) {
         return manager.devices
             .receive(on: DispatchQueue.main)
             .sink { onChanged($0.values.map { $0.export }) }
+            .store(in: &disposeBag)
+    }
+    
+    // MARK: - Device services
+    
+    @objc public func deviceServices(id: String) -> [Dictionary<String, Any>] {
+        guard let uuid = UUID(uuidString: id) else {
+            return []
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            return []
+        }
+        
+        return device.services.value.export
+    }
+    
+    @objc public func deviceServicesObserve(id: String, onChanged: @escaping ([Dictionary<String, Any>]) -> Void) {
+        guard let uuid = UUID(uuidString: id) else {
+            return
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            return
+        }
+        
+        return device.services
+            .receive(on: DispatchQueue.main)
+            .sink { onChanged($0.export) }
             .store(in: &disposeBag)
     }
     
@@ -110,21 +139,21 @@ struct BlueBreezeError : Error {
             .store(in: &disposeBag)
     }
     
-    // MARK: - Device services
+    // MARK: - Device MTU
     
-    @objc public func deviceServices(id: String) -> [NSDictionary] {
+    @objc public func deviceMTU(id: String) -> Int {
         guard let uuid = UUID(uuidString: id) else {
-            return []
+            return 0
         }
         
         guard let device = manager.devices.value[uuid] else {
-            return []
+            return 0
         }
         
-        return device.services.value.export
+        return device.mtu.value
     }
     
-    @objc public func deviceServicesObserve(id: String, onChanged: @escaping ([NSDictionary]) -> Void) {
+    @objc public func deviceMTUObserve(id: String, onChanged: @escaping (Int) -> Void) {
         guard let uuid = UUID(uuidString: id) else {
             return
         }
@@ -133,9 +162,9 @@ struct BlueBreezeError : Error {
             return
         }
         
-        return device.services
+        return device.mtu
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
+            .sink { onChanged($0) }
             .store(in: &disposeBag)
     }
 
@@ -214,12 +243,31 @@ extension BBState {
 }
 
 extension BBDevice {
-    var export: NSDictionary {
-        return [
+    var export: Dictionary<String, Any> {
+        var result: Dictionary<String, Any> = [
             "id": id.uuidString,
-            "name": name,
-            "rssi": rssi
+            "rssi": rssi,
+            "isConnectable": isConnectable,
+            "advertisedServices": advertisedServices.map(\.uuidString),
         ]
+        
+        if let name {
+            result["name"] = name
+        }
+        
+        if let manufacturerId {
+            result["manufacturerId"] = manufacturerId
+        }
+        
+        if let manufacturerName {
+            result["manufacturerName"] = manufacturerName
+        }
+        
+        if let manufacturerData {
+            result["manufacturerData"] = manufacturerData.export
+        }
+        
+        return result;
     }
 }
 
@@ -233,22 +281,38 @@ extension BBDeviceConnectionStatus {
 }
 
 extension BBCharacteristic {
-    var export: NSDictionary {
-        return [
-            "id": id.uuidString,
-            "name": BBConstants.knownCharacteristics[id] ?? id.uuidString
+    var export: Dictionary<String, Any> {
+        var result: Dictionary<String, Any> = [
+            "id": id.uuidString
         ]
+        
+        if let name = BBConstants.knownCharacteristics[id] {
+            result["name"] = name
+        }
+
+        return result
     }
 }
 
 extension [BBUUID: [BBCharacteristic]] {
-    var export: [NSDictionary] {
+    var export: [Dictionary<String, Any>] {
         return map { element in
-            [
+            var result: Dictionary<String, Any> = [
                 "id": element.key.uuidString,
-                "name": BBConstants.knownServices[element.key] ?? element.key.uuidString,
                 "characteristics": element.value.map { $0.export }
             ]
+            
+            if let name = BBConstants.knownServices[element.key] {
+                result["name"] = name
+            }
+            
+            return result
         }
+    }
+}
+
+extension Data {
+    var export: Array<UInt8> {
+        return map { $0 }
     }
 }

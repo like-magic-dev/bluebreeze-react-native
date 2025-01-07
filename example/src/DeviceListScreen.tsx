@@ -65,9 +65,14 @@ export default function DeviceListScreen() {
                 { deviceId: device.id }
             )}
             >
-            <View style={styles.item}>
-                <Text style={styles.title}>{device.name}</Text>
-                <Text style={styles.title}>{device.rssi}</Text>
+            <View style={styles.listItem}>
+                <View style={styles.hstack}>
+                    <View style={[styles.vstack, styles.container]}>
+                        <Text style={styles.deviceName}>{device.name ?? '-'}</Text>
+                        <Text style={styles.deviceManufacturer}>{device.manufacturerName ?? '-'}</Text>
+                    </View>
+                    <Text style={styles.deviceName}>{device.rssi}</Text>
+                </View>
             </View>
         </TouchableOpacity>
     );
@@ -75,7 +80,7 @@ export default function DeviceListScreen() {
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
-                data={scannedDevices.filter((device) => device.name.length > 0)}
+                data={scannedDevices}
                 renderItem={({ item }) => ( <Item {...item} /> )}
                 keyExtractor={item => item.id}
                 />
@@ -87,11 +92,21 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    item: {
+    hstack: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    vstack: {
+        flexDirection: 'column',
+    },
+    listItem: {
       padding: 10,
       borderBottomWidth: 1,
     },
-    title: {
+    deviceName: {
       fontSize: 20,
+    },
+    deviceManufacturer: {
+      fontSize: 14,
     },
 });

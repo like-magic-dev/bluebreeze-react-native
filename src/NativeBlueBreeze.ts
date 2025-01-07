@@ -4,18 +4,13 @@ import type {EventEmitter} from 'react-native/Libraries/Types/CodegenTypes';
 
 export interface BBCharacteristic {
     id: string;
-    name: string;
+    name?: string;
 }
 
 export interface BBService {
     id: string;
-    name: string;
+    name?: string;
     characteristics: BBCharacteristic[];
-}
-
-export interface BBDeviceConnectionStatusEvent {
-    id: string;
-    value: string;
 }
 
 export interface BBDeviceServicesEvent {
@@ -23,18 +18,37 @@ export interface BBDeviceServicesEvent {
     value: BBService[];
 }
 
+export interface BBDeviceConnectionStatusEvent {
+    id: string;
+    value: string;
+}
+
+export interface BBDeviceMTUEvent {
+    id: string;
+    value: number;
+}
+
 export interface BBDevice {
     id: string;
-    name: string;
+    name?: string;
     rssi: number;
+    isConnectable: boolean;
+    manufacturerId?: number;
+    manufacturerName?: string;
+    manufacturerData?: number[];
+    advertisedServices: string[];
+
+    // Services
+    services(): BBService[];
+    readonly servicesEmitter: EventEmitter<BBService[]>;
 
     // Connection status
     connectionStatus(): string;
     readonly connectionStatusEmitter: EventEmitter<string>;
 
-    // Services
-    services(): BBService[];
-    readonly servicesEmitter: EventEmitter<BBService[]>;
+    // MTU
+    mtu(): number;
+    readonly mtuEmitter: EventEmitter<number>;
 
     // Operations
     connect: () => Promise<void>;
@@ -63,13 +77,17 @@ export interface Spec extends TurboModule {
     devices(): BBDevice[];
     readonly devicesEmitter: EventEmitter<BBDevice[]>;
 
+    // Device services
+    deviceServices(id: string): BBService[];
+    readonly deviceServicesEmitter: EventEmitter<BBDeviceServicesEvent>;
+
     // Device connection status
     deviceConnectionStatus(id: string): string;
     readonly deviceConnectionStatusEmitter: EventEmitter<BBDeviceConnectionStatusEvent>;
 
-    // Device services
-    deviceServices(id: string): BBService[];
-    readonly deviceServicesEmitter: EventEmitter<BBDeviceServicesEvent>;
+    // Device MTU
+    deviceMTU(id: string): number;
+    readonly deviceMTUEmitter: EventEmitter<BBDeviceMTUEvent>;
 
     // Device operation
     deviceConnect(id: string): Promise<void>;

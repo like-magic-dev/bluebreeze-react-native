@@ -78,13 +78,13 @@ export default function DeviceScreen({ route }) {
 
     const Characteristic = (characteristic: BBCharacteristic) => (
         <View style={styles.item}>
-            <Text style={styles.title}>{characteristic.name}</Text>
+            <Text style={styles.title}>{characteristic.name ?? characteristic.id}</Text>
         </View>
     );
 
     const Service = (service: BBService) => (
         <View style={styles.item}>
-            <Text style={styles.title1}>{service.name}</Text>
+            <Text style={styles.title1}>{service.name ?? service.id}</Text>
             <FlatList
                 data={service.characteristics}
                 renderItem={({ item }) => Characteristic(item)}
