@@ -6,6 +6,8 @@
     NSMutableArray<NSString*>* trackedDeviceServices;
     NSMutableArray<NSString*>* trackedDeviceConnectionStatus;
     NSMutableArray<NSString*>* trackedDeviceMTU;
+    NSMutableArray<NSString*>* trackedDeviceCharacteristicData;
+    NSMutableArray<NSString*>* trackedDeviceCharacteristicNotifyEnabled;
 }
 
 - (instancetype) init {
@@ -15,6 +17,10 @@
         
         trackedDeviceConnectionStatus = [NSMutableArray new];
         trackedDeviceServices = [NSMutableArray new];
+        trackedDeviceMTU = [NSMutableArray new];
+        
+        trackedDeviceCharacteristicData = [NSMutableArray new];
+        trackedDeviceCharacteristicNotifyEnabled = [NSMutableArray new];
 
         [impl authorizationStatusObserveOnChanged:^(NSString * _Nonnull status) {
             if (self->_eventEmitterCallback != nil) {
@@ -42,6 +48,38 @@
                             @"id": deviceId,
                             @"value": value
                         }];
+                        
+                        for (id service in value) {
+                            NSString* serviceId = service[@"id"];
+                            for (id characteristic in service[@"characteristics"]) {
+                                NSString* characteristicId = characteristic[@"id"];
+                                NSString* trackingKey = [NSString stringWithFormat:@"%@:%@:%@", deviceId, serviceId, characteristicId];
+                                
+                                if ([self->trackedDeviceCharacteristicData indexOfObject:trackingKey] == NSNotFound) {
+                                    [self->trackedDeviceConnectionStatus addObject:trackingKey];
+                                    [self->impl deviceCharacteristicDataObserveWithId:deviceId serviceId:serviceId characteristicId:characteristicId onChanged:^(NSArray<NSNumber *> * _Nonnull value) {
+                                        [self emitDeviceCharacteristicDataEmitter:@{
+                                            @"id": deviceId,
+                                            @"serviceId": serviceId,
+                                            @"characteristicId": characteristicId,
+                                            @"value": value
+                                        }];
+                                    }];
+                                }
+                                
+                                if ([self->trackedDeviceCharacteristicNotifyEnabled indexOfObject:trackingKey] == NSNotFound) {
+                                    [self->trackedDeviceCharacteristicNotifyEnabled addObject:trackingKey];
+                                    [self->impl deviceCharacteristicNotifyEnabledObserveWithId:deviceId serviceId:serviceId characteristicId:characteristicId onChanged:^(BOOL value) {
+                                        [self emitDeviceCharacteristicNotifyEnabledEmitter:@{
+                                            @"id": deviceId,
+                                            @"serviceId": serviceId,
+                                            @"characteristicId": characteristicId,
+                                            @"value": [NSNumber numberWithBool:value]
+                                        }];
+                                    }];
+                                }
+                            }
+                        }
                     }];
                 }
                 
@@ -110,12 +148,16 @@ RCT_EXPORT_MODULE()
     return [impl devices];
 }
 
+- (NSArray<id<NSObject>> *)deviceServices:(NSString *)id {
+    return [impl deviceServicesWithId:id];
+}
+
 - (NSString*)deviceConnectionStatus:(NSString *)id {
     return [impl deviceConnectionStatusWithId:id];
 }
 
-- (NSArray<id<NSObject>> *)deviceServices:(NSString *)id {
-    return [impl deviceServicesWithId:id];
+- (NSNumber *)deviceMTU:(NSString *)id {
+    return [NSNumber numberWithInt:[impl deviceMTUWithId:id]];
 }
 
 - (void)deviceConnect:(NSString *)id resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
@@ -153,6 +195,78 @@ RCT_EXPORT_MODULE()
 
 - (void)deviceRequestMTU:(NSString *)id mtu:(double)mtu resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
     [impl deviceRequestMTUWithId:id mtu:mtu completionHandler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            reject([@([error code]) stringValue], [error description], error);
+        } else {
+            resolve(nil);
+        }
+    }];
+}
+
+- (NSArray<NSNumber *> *)deviceCharacteristicData:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId {
+    return [impl deviceCharacteristicDataWithId:id
+                                      serviceId:serviceId
+                               characteristicId:characteristicId
+    ];
+}
+
+- (NSNumber *)deviceCharacteristicNotifyEnabled:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId {
+    return [NSNumber numberWithBool:[impl deviceCharacteristicNotifyEnabledWithId:id
+                                                                        serviceId:serviceId
+                                                                 characteristicId:characteristicId
+    ]];
+}
+
+
+- (void)deviceCharacteristicRead:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
+    [impl deviceCharacteristicReadWithId:id
+                               serviceId:serviceId
+                        characteristicId:characteristicId
+                       completionHandler:^(NSArray<NSNumber *> * _Nullable value, NSError * _Nullable error) {
+        if (error != nil) {
+            reject([@([error code]) stringValue], [error description], error);
+        } else {
+            resolve(value);
+        }
+    }];
+}
+
+
+- (void)deviceCharacteristicWrite:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId data:(NSArray *)data withResponse:(BOOL)withResponse resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
+    [impl deviceCharacteristicWriteWithId:id
+                                serviceId:serviceId
+                         characteristicId:characteristicId
+                                     data:data
+                             withResponse:withResponse
+                        completionHandler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            reject([@([error code]) stringValue], [error description], error);
+        } else {
+            resolve(nil);
+        }
+    }];
+}
+
+
+- (void)deviceCharacteristicSubscribe:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
+    [impl deviceCharacteristicSubscribeWithId:id
+                                    serviceId:serviceId
+                             characteristicId:characteristicId
+                            completionHandler:^(NSError * _Nullable error) {
+        if (error != nil) {
+            reject([@([error code]) stringValue], [error description], error);
+        } else {
+            resolve(nil);
+        }
+    }];
+}
+
+
+- (void)deviceCharacteristicUnsubscribe:(NSString *)id serviceId:(NSString *)serviceId characteristicId:(NSString *)characteristicId resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
+    [impl deviceCharacteristicUnsubscribeWithId:id
+                                      serviceId:serviceId
+                             characteristicId:characteristicId
+                            completionHandler:^(NSError * _Nullable error) {
         if (error != nil) {
             reject([@([error code]) stringValue], [error description], error);
         } else {

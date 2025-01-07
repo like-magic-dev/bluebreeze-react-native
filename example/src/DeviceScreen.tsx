@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Button, FlatList, SafeAreaView, View, Text, TouchableOpacity } from 'react-native';
 import { devices } from 'react-native-bluebreeze';
 import type { BBCharacteristic, BBService } from '../../src/NativeBlueBreeze';
+import CharacteristicScreen from './CharacteristicScreen';
 
 export default function DeviceScreen({ route }) {
     const navigation = useNavigation();
@@ -49,26 +50,26 @@ export default function DeviceScreen({ route }) {
             headerTitle: device?.name,
         });
     }, []);
-    
+
     useEffect(() => {
         navigation.setOptions({
             headerRight: () => (
                 (status == "connected") ? (
-                    <Button 
+                    <Button
                         onPress={async () => {
                             await device.disconnect();
-                        }} 
-                        title='Disconnect' 
-                        />
+                        }}
+                        title='Disconnect'
+                    />
                 ) : (
-                    <Button 
+                    <Button
                         onPress={async () => {
                             await device.connect();
                             await device.discoverServices();
                             await device.requestMTU(512);
-                        }} 
-                        title='Connect' 
-                        />
+                        }}
+                        title='Connect'
+                    />
                 )
             ),
         });
@@ -76,20 +77,14 @@ export default function DeviceScreen({ route }) {
 
     // Rendering
 
-    const Characteristic = (characteristic: BBCharacteristic) => (
-        <View style={styles.item}>
-            <Text style={styles.title}>{characteristic.name ?? characteristic.id}</Text>
-        </View>
-    );
-
     const Service = (service: BBService) => (
-        <View style={styles.item}>
-            <Text style={styles.title1}>{service.name ?? service.id}</Text>
+        <View style={styles.listItem}>
+            <Text style={styles.service}>{service.name ?? service.id}</Text>
             <FlatList
                 data={service.characteristics}
-                renderItem={({ item }) => Characteristic(item)}
+                renderItem={({ item }) => (<CharacteristicScreen characteristic={item} />)}
                 keyExtractor={item => item.id}
-                />
+            />
         </View>
     );
 
@@ -99,7 +94,7 @@ export default function DeviceScreen({ route }) {
                 data={services}
                 renderItem={({ item }) => Service(item)}
                 keyExtractor={item => item.id}
-                />
+            />
         </SafeAreaView>
     );
 }
@@ -108,14 +103,13 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
-    item: {
-      padding: 10,
+    listItem: {
     },
-    title1: {
-      fontSize: 14,
-      fontWeight: 'bold',
-    },
-    title: {
-      fontSize: 20,
+    service: {
+        backgroundColor: '#000',
+        color: '#fff',
+        padding: 5,
+        fontSize: 14,
+        fontWeight: 'bold',
     },
 });

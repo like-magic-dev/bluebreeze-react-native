@@ -217,6 +217,147 @@ struct BlueBreezeError : Error {
         
         try await device.requestMTU(mtu)
     }
+    
+    // MARK: - Device characteristic data
+    
+    @objc public func deviceCharacteristicData(id: String, serviceId: String, characteristicId: String) -> Array<UInt8> {
+        guard let uuid = UUID(uuidString: id)else {
+            return []
+        }
+        
+        guard let device = manager.devices.value[uuid]else {
+            return []
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            return []
+        }
+
+        return characteristic.data.value.export
+    }
+    
+    @objc public func deviceCharacteristicDataObserve(id: String, serviceId: String, characteristicId: String, onChanged: @escaping (Array<UInt8>) -> Void) {
+        guard let uuid = UUID(uuidString: id) else {
+            return
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            return
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            return
+        }
+        
+        return characteristic.data
+            .receive(on: DispatchQueue.main)
+            .sink { onChanged($0.export) }
+            .store(in: &disposeBag)
+    }
+    
+    // MARK: - Device notify enabled
+    
+    @objc public func deviceCharacteristicNotifyEnabled(id: String, serviceId: String, characteristicId: String) -> Bool {
+        guard let uuid = UUID(uuidString: id)else {
+            return false
+        }
+        
+        guard let device = manager.devices.value[uuid]else {
+            return false
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            return false
+        }
+
+        return characteristic.isNotifying.value
+    }
+    
+    @objc public func deviceCharacteristicNotifyEnabledObserve(id: String, serviceId: String, characteristicId: String, onChanged: @escaping (Bool) -> Void) {
+        guard let uuid = UUID(uuidString: id) else {
+            return
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            return
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            return
+        }
+        
+        return characteristic.isNotifying
+            .receive(on: DispatchQueue.main)
+            .sink { onChanged($0) }
+            .store(in: &disposeBag)
+    }
+
+    // MARK: - Device operations
+    
+    @objc public func deviceCharacteristicRead(id: String, serviceId: String, characteristicId: String) async throws -> Array<UInt8> {
+        guard let uuid = UUID(uuidString: id) else {
+            throw BlueBreezeError(description: "Invalid UUID")
+        }
+
+        guard let device = manager.devices.value[uuid] else {
+            throw BlueBreezeError(description: "Device not found")
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            throw BlueBreezeError(description: "Characteristic not found")
+        }
+        
+        /*let data =*/ try await characteristic.read()
+        return []
+    }
+    
+    @objc public func deviceCharacteristicWrite(id: String, serviceId: String, characteristicId: String, data: Array<UInt8>, withResponse: Bool) async throws {
+        guard let uuid = UUID(uuidString: id) else {
+            throw BlueBreezeError(description: "Invalid UUID")
+        }
+
+        guard let device = manager.devices.value[uuid] else {
+            throw BlueBreezeError(description: "Device not found")
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            throw BlueBreezeError(description: "Characteristic not found")
+        }
+        
+        try await characteristic.write(Data(data), withResponse: withResponse)
+    }
+    
+    @objc public func deviceCharacteristicSubscribe(id: String, serviceId: String, characteristicId: String) async throws {
+        guard let uuid = UUID(uuidString: id) else {
+            throw BlueBreezeError(description: "Invalid UUID")
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            throw BlueBreezeError(description: "Device not found")
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            throw BlueBreezeError(description: "Characteristic not found")
+        }
+        
+        try await characteristic.subscribe()
+    }
+    
+    @objc public func deviceCharacteristicUnsubscribe(id: String, serviceId: String, characteristicId: String) async throws {
+        guard let uuid = UUID(uuidString: id) else {
+            throw BlueBreezeError(description: "Invalid UUID")
+        }
+        
+        guard let device = manager.devices.value[uuid] else {
+            throw BlueBreezeError(description: "Device not found")
+        }
+        
+        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
+            throw BlueBreezeError(description: "Characteristic not found")
+        }
+        
+        try await characteristic.unsubscribe()
+    }
 }
 
 extension BBAuthorization {
@@ -238,6 +379,17 @@ extension BBState {
         case .unauthorized: return "unauthorized"
         case .unsupported: return "unsupported"
         case .resetting: return "resetting"
+        }
+    }
+}
+
+extension BBCharacteristicProperty {
+    var export: String {
+        switch self {
+        case .read: return "read"
+        case .writeWithoutResponse: return "writeWithoutResponse"
+        case .writeWithResponse: return "writeWithResponse"
+        case .notify: return "notify"
         }
     }
 }
@@ -269,6 +421,12 @@ extension BBDevice {
         
         return result;
     }
+    
+    func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
+        let service = services.value.first { $0.key == BBUUID(string: serviceId)}
+        let characteristic = service?.value.first { $0.id == BBUUID(string: characteristicId) }
+        return characteristic
+    }
 }
 
 extension BBDeviceConnectionStatus {
@@ -283,7 +441,8 @@ extension BBDeviceConnectionStatus {
 extension BBCharacteristic {
     var export: Dictionary<String, Any> {
         var result: Dictionary<String, Any> = [
-            "id": id.uuidString
+            "id": id.uuidString,
+            "properties": properties.map { $0.export }
         ]
         
         if let name = BBConstants.knownCharacteristics[id] {

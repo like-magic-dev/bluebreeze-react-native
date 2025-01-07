@@ -5,6 +5,21 @@ import type {EventEmitter} from 'react-native/Libraries/Types/CodegenTypes';
 export interface BBCharacteristic {
     id: string;
     name?: string;
+    properties: string[];
+
+    // Data
+    data(): number[];
+    readonly dataEmitter: EventEmitter<number[]>;
+
+    // Notifying
+    notifyEnabled(): boolean;
+    readonly notifyEnabledEmitter: EventEmitter<boolean>;
+
+    // Operations
+    read: () => Promise<number[]>;
+    write: (data: number[], withResponse: boolean) => Promise<void>;
+    subscribe: () => Promise<void>;
+    unsubscribe: () => Promise<void>;
 }
 
 export interface BBService {
@@ -26,6 +41,20 @@ export interface BBDeviceConnectionStatusEvent {
 export interface BBDeviceMTUEvent {
     id: string;
     value: number;
+}
+
+export interface BBDeviceCharacteristicDataEvent {
+    id: string;
+    serviceId: string;
+    characteristicId: string;
+    value: number[];
+}
+
+export interface BBDeviceCharacteristicNotifyEnabledEvent {
+    id: string;
+    serviceId: string;
+    characteristicId: string;
+    value: boolean;
 }
 
 export interface BBDevice {
@@ -94,6 +123,20 @@ export interface Spec extends TurboModule {
     deviceDisconnect(id: string): Promise<void>;
     deviceDiscoverServices(id: string): Promise<void>;
     deviceRequestMTU(id: string, mtu: number): Promise<number>;
+
+    // Device characteristic data
+    deviceCharacteristicData(id: string, serviceId: string, characteristicId: string): number[];
+    readonly deviceCharacteristicDataEmitter: EventEmitter<BBDeviceCharacteristicDataEvent>;
+
+    // Device characteristic notify enabled
+    deviceCharacteristicNotifyEnabled(id: string, serviceId: string, characteristicId: string): boolean;
+    readonly deviceCharacteristicNotifyEnabledEmitter: EventEmitter<BBDeviceCharacteristicNotifyEnabledEvent>;
+
+    // Device characteristic operations
+    deviceCharacteristicRead(id: string, serviceId: string, characteristicId: string): Promise<number[]>;
+    deviceCharacteristicWrite(id: string, serviceId: string, characteristicId: string, data: number[], withResponse: boolean): Promise<void>;
+    deviceCharacteristicSubscribe(id: string, serviceId: string, characteristicId: string): Promise<void>;
+    deviceCharacteristicUnsubscribe(id: string, serviceId: string, characteristicId: string): Promise<void>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('BlueBreeze');

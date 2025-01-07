@@ -71,7 +71,7 @@ export default function DeviceListScreen() {
                         <Text style={styles.deviceName}>{device.name ?? '-'}</Text>
                         <Text style={styles.deviceManufacturer}>{device.manufacturerName ?? '-'}</Text>
                     </View>
-                    <Text style={styles.deviceName}>{device.rssi}</Text>
+                    <Text style={styles.rssi}>{device.rssi}</Text>
                 </View>
             </View>
         </TouchableOpacity>
@@ -100,13 +100,19 @@ const styles = StyleSheet.create({
         flexDirection: 'column',
     },
     listItem: {
-      padding: 10,
+      margin: 10,
+      paddingBottom: 5,
       borderBottomWidth: 1,
+      borderBottomColor: '#ccc',
     },
     deviceName: {
-      fontSize: 20,
+      fontSize: 16,
+      fontWeight: 'bold',
     },
     deviceManufacturer: {
       fontSize: 14,
     },
+    rssi: {
+        fontSize: 18,
+    }
 });
