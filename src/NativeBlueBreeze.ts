@@ -87,14 +87,14 @@ export interface BBDevice {
 }
 
 export interface Spec extends TurboModule {
+    // State
+    state(): string;
+    readonly stateEmitter: EventEmitter<string>;
+
     // Authorization
     authorizationStatus(): string;
     readonly authorizationStatusEmitter: EventEmitter<string>;
     authorizationRequest(): void;
-
-    // State
-    state(): string;
-    readonly stateEmitter: EventEmitter<string>;
 
     // Scanning
     scanningEnabled(): boolean;

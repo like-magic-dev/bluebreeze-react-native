@@ -17,6 +17,19 @@ struct BlueBreezeError : Error {
     var disposeBag: Set<AnyCancellable> = []
     let manager = BBManager()
 
+    // MARK: - State
+
+    @objc public func state() -> String {
+        return manager.state.value.export
+    }
+
+    @objc public func stateObserve(onChanged: @escaping (String) -> Void) {
+        manager.state
+            .receive(on: DispatchQueue.main)
+            .sink { onChanged($0.export) }
+            .store(in: &disposeBag)
+    }
+
     // MARK: - Authorization
 
     @objc public func authorizationStatus() -> String {
@@ -32,19 +45,6 @@ struct BlueBreezeError : Error {
 
     @objc public func authorizationRequest() {
         manager.authorizationRequest()
-    }
-
-    // MARK: - State
-
-    @objc public func state() -> String {
-        return manager.state.value.export
-    }
-
-    @objc public func stateObserve(onChanged: @escaping (String) -> Void) {
-        manager.state
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
-            .store(in: &disposeBag)
     }
 
     // MARK: - Scanning
