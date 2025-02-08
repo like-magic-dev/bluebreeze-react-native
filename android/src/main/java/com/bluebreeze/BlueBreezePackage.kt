@@ -24,7 +24,6 @@ class BlueBreezePackage : BaseReactPackage() {
         BlueBreezeModule.NAME,
         false,  // canOverrideExistingModule
         false,  // needsEagerInit
-        true,  // hasConstants
         false,  // isCxxModule
         true // isTurboModule
       )
