@@ -1,5 +1,6 @@
 package com.bluebreeze
 
+import android.content.Context
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -18,6 +19,9 @@ import kotlinx.coroutines.launch
 class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreezeSpec(reactContext) {
     val manager = BBManager(reactContext)
     val jobs: MutableList<Job> = mutableListOf()
+
+    val context: Context
+        get() = currentActivity ?: reactApplicationContext
 
 //    NSMutableArray<NSString*>* trackedDeviceServices;
 //    NSMutableArray<NSString*>* trackedDeviceConnectionStatus;
@@ -132,13 +136,13 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
     override fun authorizationStatus(): String = manager.authorizationStatus.value.export
 
-    override fun authorizationRequest() = manager.authorizationRequest(reactApplicationContext)
+    override fun authorizationRequest() = manager.authorizationRequest(context)
 
     override fun scanningEnabled(): Boolean = manager.scanEnabled.value
 
-    override fun scanningStart() = manager.scanStart(reactApplicationContext)
+    override fun scanningStart() = manager.scanStart(context)
 
-    override fun scanningStop() = manager.scanStop(reactApplicationContext)
+    override fun scanningStop() = manager.scanStop(context)
 
     override fun devices(): WritableArray {
         return WritableNativeArray()
