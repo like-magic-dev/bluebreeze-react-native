@@ -1,7 +1,17 @@
-import type { BBCharacteristic } from "./bluebreeze_characteristic";
+import type { BBCharacteristic } from "./bluebreeze_characteristic"
 
-export interface BBService {
-    id: string;
-    name?: string;
-    characteristics: BBCharacteristic[];
+export class BBService {
+    constructor(
+        id: string,
+        name: string | undefined,
+        characteristics: BBCharacteristic[]
+    ) {
+        this.id = id
+        this.name = name
+        this.characteristics = characteristics
+    }
+
+    id: string
+    name?: string
+    characteristics: BBCharacteristic[]
 }

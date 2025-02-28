@@ -1,25 +1,40 @@
-import type { BBService } from "./bluebreeze_service";
-import type { StateEventEmitter } from "./state_event_emitter";
+import { deviceConnect, deviceConnectionStatus, deviceDisconnect, deviceDiscoverServices, deviceMTU, deviceRequestMTU, deviceServices } from "react-native-bluebreeze"
+import type { BBService } from "./bluebreeze_service"
+import { StateEventEmitter } from "./emitters"
 
-export interface BBDevice {
-    id: string;
-    name?: string;
+export class BBDevice {
+    constructor(
+        id: string,
+        name?: string,
+    ) {
+        this.id = id
+        this.name = name
+
+        this.services = deviceServices(id)
+        this.connectionStatus = deviceConnectionStatus(id)
+        this.mtu = deviceMTU(id)
+
+        this.connect = () => deviceConnect(id)
+        this.disconnect = () => deviceDisconnect(id)
+        this.discoverServices = () => deviceDiscoverServices(id)
+        this.requestMTU = (mtu: number) => deviceRequestMTU(id, mtu)
+    }
+
+    id: string
+    name?: string
 
     // Services
-    services: () => BBService[];
-    readonly servicesEmitter: StateEventEmitter<BBService[]>;
+    services: StateEventEmitter<BBService[]>
 
     // Connection status
-    connectionStatus: () => string;
-    readonly connectionStatusEmitter: StateEventEmitter<string>;
+    connectionStatus: StateEventEmitter<string>
 
     // MTU
-    mtu: () => number;
-    readonly mtuEmitter: StateEventEmitter<number>;
+    mtu: StateEventEmitter<number>
 
     // Operations
-    connect: () => Promise<void>;
-    disconnect: () => Promise<void>;
-    discoverServices: () => Promise<void>;
-    requestMTU: (mtu: number) => Promise<number>;
+    connect: () => Promise<void>
+    disconnect: () => Promise<void>
+    discoverServices: () => Promise<void>
+    requestMTU: (mtu: number) => Promise<number>
 }
