@@ -1,7 +1,8 @@
+import type { BBDevice } from "./bluebreeze_device"
 
 export class BBScanResult {
     constructor(
-        id: string,
+        device: BBDevice,
         name: string | undefined,
         rssi: number,
         connectable: boolean,
@@ -10,7 +11,7 @@ export class BBScanResult {
         manufacturerName?: string,
         manufacturerData?: number[]
     ) {
-        this.id = id
+        this.device = device
         this.name = name
         this.rssi = rssi
         this.connectable = connectable
@@ -20,7 +21,7 @@ export class BBScanResult {
         this.manufacturerData = manufacturerData
     }
 
-    id: string
+    device: BBDevice
     name?: string
     rssi: number
     connectable: boolean

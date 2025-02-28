@@ -34,7 +34,12 @@ NativeBlueBreeze.scanEnabledEmitter((value) => {
 export const scanResults = new EventEmitter<BBScanResult>()
 
 NativeBlueBreeze.scanResultEmitter((value) => {
-    scanResults.add(convertScanResult(value))
+    const device = devices.value?.get(value.id)
+    if (device == undefined) {
+        return
+    }
+
+    scanResults.add(convertScanResult(device, value))
 })
 
 export const scanStart = NativeBlueBreeze.scanStart
@@ -228,9 +233,12 @@ const convertDevice = (device: SpecDevice): BBDevice => {
     )
 }
 
-const convertScanResult = (scanResult: SpecScanResult): BBScanResult => {
+const convertScanResult = (
+    device: BBDevice,
+    scanResult: SpecScanResult,
+): BBScanResult => {
     return new BBScanResult(
-        scanResult.id,
+        device,
         scanResult.name,
         scanResult.rssi,
         scanResult.connectable,

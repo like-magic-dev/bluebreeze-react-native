@@ -42,7 +42,7 @@
         
         [impl scanResultsObserveOnChanged:^(NSDictionary<NSString *,id> * _Nonnull scanResult) {
             if (self->_eventEmitterCallback != nil) {
-                [self emitScanResultsEmitter:scanResult];
+                [self emitScanResultEmitter:scanResult];
             }
         }];
         
