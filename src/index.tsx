@@ -1,5 +1,11 @@
 import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
-import BlueBreeze, {type BBCharacteristic, type BBDevice, type BBService} from './NativeBlueBreeze';
+import BlueBreeze, {type BBCharacteristic, type BBDevice, type BBDevicesEvent, type BBScanResultEvent, type BBService} from './NativeBlueBreeze';
+
+// State
+
+export const state = BlueBreeze.state;
+
+export const stateEmitter = BlueBreeze.stateEmitter;
 
 // Authorization to use BLE
 
@@ -9,25 +15,35 @@ export const authorizationStatus = BlueBreeze.authorizationStatus;
 
 export const authorizationStatusEmitter = BlueBreeze.authorizationStatusEmitter;
 
-// State
-
-export const state = BlueBreeze.state;
-
-export const stateEmitter = BlueBreeze.stateEmitter;
-
 // Scanning
 
-export const scanningEnabled = BlueBreeze.scanningEnabled;
+export const scanEnabled = BlueBreeze.scanEnabled;
 
-export const scanningEnabledEmitter = BlueBreeze.scanningEnabledEmitter;
+export const scanEnabledEmitter = BlueBreeze.scanEnabledEmitter;
 
-export const scanningStart = BlueBreeze.scanningStart;
+export const scanResultsEmitter: EventEmitter<BBScanResultEvent> = BlueBreeze.scanResultsEmitter;
 
-export const scanningStop = BlueBreeze.scanningStop;
+export const scanStart = BlueBreeze.scanStart;
 
-// Devices
+export const scanStop = BlueBreeze.scanStop;
 
-const characteristicAddMethods = (device: BBDevice, service: BBService, characteristic: BBCharacteristic): BBCharacteristic => {
+// Device
+
+export const devices = (): BBDevice[] => {
+    return BlueBreeze.devices().map((device) => decodeDevice(device));
+}
+
+export const devicesEmitter: EventEmitter<BBDevicesEvent> = (handler: (arg: BBDevicesEvent) => void | Promise<void>) => {
+    return BlueBreeze.devicesEmitter((event) => {
+        handler({
+            value: event.value.map((device) => decodeDevice(device))
+        });
+    });
+}
+
+// Object decoding
+
+const decodeCharacteristic = (device: BBDevice, service: BBService, characteristic: BBCharacteristic): BBCharacteristic => {
     return {
         ...characteristic,
         data: () => BlueBreeze.deviceCharacteristicData(device.id, service.id, characteristic.id),
@@ -53,14 +69,14 @@ const characteristicAddMethods = (device: BBDevice, service: BBService, characte
     };
 }
 
-const serviceAddMethods = (device: BBDevice, service: BBService): BBService => {
+const decodeService = (device: BBDevice, service: BBService): BBService => {
     return {
         ...service,
-        characteristics: service.characteristics.map((characteristic) => characteristicAddMethods(device, service, characteristic)),
+        characteristics: service.characteristics.map((characteristic) => decodeCharacteristic(device, service, characteristic)),
     };
 }
 
-const deviceAddMethods = (device: BBDevice): BBDevice => {
+const decodeDevice = (device: BBDevice): BBDevice => {
     return {
         ...device,
         connectionStatus: () => BlueBreeze.deviceConnectionStatus(device.id),
@@ -71,12 +87,12 @@ const deviceAddMethods = (device: BBDevice): BBDevice => {
                 }
             });
         },
-        services: () => BlueBreeze.deviceServices(device.id).map((service) => serviceAddMethods(device, service)),
+        services: () => BlueBreeze.deviceServices(device.id).map((service) => decodeService(device, service)),
         servicesEmitter: (handler: (arg: BBService[]) => void | Promise<void>) => {
             return BlueBreeze.deviceServicesEmitter((value) => {
                 if ((value["id"] === device.id) && (value["value"] != undefined)) {
                     const services = value["value"];
-                    handler(services.map((service) => serviceAddMethods(device, service)));
+                    handler(services.map((service) => decodeService(device, service)));
                 }
             });
         },
@@ -85,15 +101,4 @@ const deviceAddMethods = (device: BBDevice): BBDevice => {
         discoverServices: () => BlueBreeze.deviceDiscoverServices(device.id),
         requestMTU: (mtu: number) => BlueBreeze.deviceRequestMTU(device.id, mtu),
     };
-}
-
-export const devices = (): BBDevice[] => {
-    return BlueBreeze.devices().map((device) => deviceAddMethods(device));
-}
-
-export const devicesEmitter: EventEmitter<BBDevice[]> = (handler: (arg: BBDevice[]) => void | Promise<void>) => {
-    handler(devices());
-    return BlueBreeze.devicesEmitter((devices) => {
-        handler(devices.map((device) => deviceAddMethods(device)));
-    });
 }

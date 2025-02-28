@@ -2,6 +2,8 @@ import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 import type {EventEmitter} from 'react-native/Libraries/Types/CodegenTypes';
 
+/// Data structures
+
 export interface BBCharacteristic {
     id: string;
     name?: string;
@@ -23,9 +25,62 @@ export interface BBCharacteristic {
 }
 
 export interface BBService {
+    device: BBDevice;
     id: string;
     name?: string;
     characteristics: BBCharacteristic[];
+}
+
+export interface BBScanResult {
+    id: string;
+    name?: string;
+    rssi: number;
+    isConnectable: boolean;
+    advertisedServices: string[];
+    manufacturerId?: number;
+    manufacturerName?: string;
+    manufacturerData?: number[];
+}
+
+export interface BBDevice {
+    id: string;
+    name?: string;
+
+    // Services
+    services: () => BBService[];
+    readonly servicesEmitter: EventEmitter<BBService[]>;
+
+    // Connection status
+    connectionStatus: () => string;
+    readonly connectionStatusEmitter: EventEmitter<string>;
+
+    // MTU
+    mtu: () => number;
+    readonly mtuEmitter: EventEmitter<number>;
+
+    // Operations
+    connect: () => Promise<void>;
+    disconnect: () => Promise<void>;
+    discoverServices: () => Promise<void>;
+    requestMTU: (mtu: number) => Promise<number>;
+}
+
+/// Events
+
+export interface BBBooleanEvent {
+    value: boolean;
+}
+
+export interface BBStringEvent {
+    value: string;
+}
+
+export interface BBScanResultEvent {
+    value: BBScanResult;
+}
+
+export interface BBDevicesEvent {
+    value: BBDevice[];
 }
 
 export interface BBDeviceServicesEvent {
@@ -57,34 +112,7 @@ export interface BBDeviceCharacteristicNotifyEnabledEvent {
     value: boolean;
 }
 
-export interface BBDevice {
-    id: string;
-    name?: string;
-    rssi: number;
-    isConnectable: boolean;
-    manufacturerId?: number;
-    manufacturerName?: string;
-    manufacturerData?: number[];
-    advertisedServices: string[];
-
-    // Services
-    services(): BBService[];
-    readonly servicesEmitter: EventEmitter<BBService[]>;
-
-    // Connection status
-    connectionStatus(): string;
-    readonly connectionStatusEmitter: EventEmitter<string>;
-
-    // MTU
-    mtu(): number;
-    readonly mtuEmitter: EventEmitter<number>;
-
-    // Operations
-    connect: () => Promise<void>;
-    disconnect: () => Promise<void>;
-    discoverServices: () => Promise<void>;
-    requestMTU: (mtu: number) => Promise<number>;
-}
+/// Module specifications
 
 export interface Spec extends TurboModule {
     // State
@@ -95,12 +123,14 @@ export interface Spec extends TurboModule {
     authorizationStatus(): string;
     readonly authorizationStatusEmitter: EventEmitter<string>;
     authorizationRequest(): void;
+    authorizationOpenSettings(): void;
 
     // Scanning
-    scanningEnabled(): boolean;
-    readonly scanningEnabledEmitter: EventEmitter<boolean>;
-    scanningStart(): void;
-    scanningStop(): void;
+    scanEnabled(): boolean;
+    readonly scanEnabledEmitter: EventEmitter<boolean>;
+    readonly scanResultsEmitter: EventEmitter<BBScanResult[]>;
+    scanStart(): void;
+    scanStop(): void;
 
     // Devices
     devices(): BBDevice[];
@@ -118,7 +148,7 @@ export interface Spec extends TurboModule {
     deviceMTU(id: string): number;
     readonly deviceMTUEmitter: EventEmitter<BBDeviceMTUEvent>;
 
-    // Device operation
+    // Device operations
     deviceConnect(id: string): Promise<void>;
     deviceDisconnect(id: string): Promise<void>;
     deviceDiscoverServices(id: string): Promise<void>;
