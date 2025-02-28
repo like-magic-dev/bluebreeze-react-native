@@ -1,5 +1,5 @@
 import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
-import BlueBreeze, {type BBCharacteristic, type BBDevice, type BBDevicesEvent, type BBScanResultEvent, type BBService} from './NativeBlueBreeze';
+import BlueBreeze, {type BBCharacteristic, type BBDevice, type BBDevicesEvent, type SpecScanResult, type BBService} from './NativeBlueBreeze';
 
 // State
 
@@ -21,7 +21,7 @@ export const scanEnabled = BlueBreeze.scanEnabled;
 
 export const scanEnabledEmitter = BlueBreeze.scanEnabledEmitter;
 
-export const scanResultsEmitter: EventEmitter<BBScanResultEvent> = BlueBreeze.scanResultsEmitter;
+export const scanResultsEmitter: EventEmitter<SpecScanResult> = BlueBreeze.scanResultsEmitter;
 
 export const scanStart = BlueBreeze.scanStart;
 
