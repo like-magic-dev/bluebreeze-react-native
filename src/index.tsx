@@ -43,12 +43,24 @@ export const scanStop = NativeBlueBreeze.scanStop
 
 // Device
 
-export const devices = new StateEventEmitter<BBDevice[]>(
-    NativeBlueBreeze.devices().map((d) => convertDevice(d))
+export const devices = new StateEventEmitter<Map<string, BBDevice>>(
+    new Map(
+        NativeBlueBreeze.devices().map((d) => [
+            d.id,
+            convertDevice(d)
+        ])
+    )
 )
 
 NativeBlueBreeze.devicesEmitter((value) => {
-    devices.add(value.map((d) => convertDevice(d)))
+    devices.add(
+        new Map(
+            value.map((d) => [
+                d.id,
+                devices.value?.get(d.id) ?? convertDevice(d)
+            ])
+        )
+    )
 })
 
 // Device services
