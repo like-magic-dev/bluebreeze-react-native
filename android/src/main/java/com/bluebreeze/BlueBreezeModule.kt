@@ -38,47 +38,65 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
     private val trackedDeviceCharacteristicData = mutableSetOf<String>()
     private val trackedDeviceCharacteristicNotifyEnabled = mutableSetOf<String>()
 
+    private fun safeEmit(block: () -> (Unit)) {
+        if (mEventEmitterCallback != null) {
+            block()
+        }
+    }
+
     init {
         // State
 
         manager.state.collectAsync {
-            emitStateEmitter(it.name)
+            safeEmit {
+                emitStateEmitter(it.name)
+            }
         }.storeIn(jobs)
 
         // Authorization
 
         manager.authorizationStatus.collectAsync {
-            emitAuthorizationStatusEmitter(it.toJs)
+            safeEmit {
+                emitAuthorizationStatusEmitter(it.toJs)
+            }
         }.storeIn(jobs)
 
         // Scanning
 
         manager.scanEnabled.collectAsync {
-            emitScanEnabledEmitter(it)
+            safeEmit {
+                emitScanEnabledEmitter(it)
+            }
         }.storeIn(jobs)
 
         manager.scanResults.collectAsync {
-            emitScanResultEmitter(it.toJs)
+            safeEmit {
+                emitScanResultEmitter(it.toJs)
+            }
         }.storeIn(jobs)
 
         // Devices
 
         manager.devices.collectAsync { devices ->
-            emitDevicesEmitter(
-                devices.map { it.value.toJs }.writableArray
-            )
+            safeEmit {
+                emitDevicesEmitter(
+                    devices.map { it.value.toJs }.writableArray
+                )
+            }
 
             for ((deviceId, device) in devices) {
                 // Device services
                 if (trackedDeviceServices.contains(deviceId).not()) {
                     trackedDeviceServices.add(deviceId)
                     device.services.collectAsync { services ->
-                        emitDeviceServicesEmitter(
-                            writableMapOf(
-                                "id" to deviceId,
-                                "value" to services
+                        safeEmit {
+                            emitDeviceServicesEmitter(
+                                writableMapOf(
+                                    "id" to deviceId,
+                                    "value" to services
+                                )
                             )
-                        )
+                        }
 
                         services.forEach { service ->
                             val serviceId = service.uuid
@@ -90,14 +108,16 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                                 if (trackedDeviceCharacteristicData.contains(trackingKey).not()) {
                                     trackedDeviceCharacteristicData.add(trackingKey)
                                     characteristic.data.collectAsync { value ->
-                                        emitDeviceCharacteristicDataEmitter(
-                                            writableMapOf(
-                                                "id" to deviceId,
-                                                "serviceId" to serviceId,
-                                                "characteristicId" to characteristicId,
-                                                "value" to value
+                                        safeEmit {
+                                            emitDeviceCharacteristicDataEmitter(
+                                                writableMapOf(
+                                                    "id" to deviceId,
+                                                    "serviceId" to serviceId,
+                                                    "characteristicId" to characteristicId,
+                                                    "value" to value
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
 
@@ -107,14 +127,16 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                                 ) {
                                     trackedDeviceCharacteristicNotifyEnabled.add(trackingKey)
                                     characteristic.isNotifying.collectAsync { value ->
-                                        emitDeviceCharacteristicNotifyEnabledEmitter(
-                                            writableMapOf(
-                                                "id" to deviceId,
-                                                "serviceId" to serviceId,
-                                                "characteristicId" to characteristicId,
-                                                "value" to value
+                                        safeEmit {
+                                            emitDeviceCharacteristicNotifyEnabledEmitter(
+                                                writableMapOf(
+                                                    "id" to deviceId,
+                                                    "serviceId" to serviceId,
+                                                    "characteristicId" to characteristicId,
+                                                    "value" to value
+                                                )
                                             )
-                                        )
+                                        }
                                     }
                                 }
                             }
@@ -126,12 +148,14 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                 if (trackedDeviceConnectionStatus.contains(deviceId).not()) {
                     trackedDeviceConnectionStatus.add(deviceId)
                     device.connectionStatus.collectAsync { value ->
-                        emitDeviceConnectionStatusEmitter(
-                            writableMapOf(
-                                "id" to deviceId,
-                                "value" to value,
+                        safeEmit {
+                            emitDeviceConnectionStatusEmitter(
+                                writableMapOf(
+                                    "id" to deviceId,
+                                    "value" to value,
+                                )
                             )
-                        )
+                        }
                     }
                 }
 
@@ -139,12 +163,14 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                 if (trackedDeviceMTU.contains(deviceId).not()) {
                     trackedDeviceMTU.add(deviceId)
                     device.mtu.collectAsync { value ->
-                        emitDeviceMTUEmitter(
-                            writableMapOf(
-                                "id" to deviceId,
-                                "value" to value,
+                        safeEmit {
+                            emitDeviceMTUEmitter(
+                                writableMapOf(
+                                    "id" to deviceId,
+                                    "value" to value,
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
