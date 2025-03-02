@@ -551,15 +551,15 @@ val List<*>.writableArray: WritableArray
         val result = Arguments.createArray()
         forEach { value ->
             when (value) {
-                null -> writableArray.pushNull()
-                is Boolean -> writableArray.pushBoolean(value)
-                is Double -> writableArray.pushDouble(value)
-                is Int -> writableArray.pushInt(value)
-                is String -> writableArray.pushString(value)
-                is Map<*, *> -> writableArray.pushMap(value.writableMap)
-                is List<*> -> writableArray.pushArray(value.writableArray)
-                is WritableArray -> writableArray.pushArray(value)
-                is WritableMap -> writableArray.pushMap(value)
+                null -> result.pushNull()
+                is Boolean -> result.pushBoolean(value)
+                is Double -> result.pushDouble(value)
+                is Int -> result.pushInt(value)
+                is String -> result.pushString(value)
+                is Map<*, *> -> result.pushMap(value.writableMap)
+                is List<*> -> result.pushArray(value.writableArray)
+                is WritableArray -> result.pushArray(value)
+                is WritableMap -> result.pushMap(value)
                 else -> throw Throwable("Unsupported type ${value.javaClass}")
             }
         }
@@ -573,15 +573,15 @@ val Map<*, *>.writableMap: WritableMap
         entries.forEach { (key, value) ->
             if (key is String) {
                 when (value) {
-                    null -> writableMap.putNull(key)
-                    is Boolean -> writableMap.putBoolean(key, value)
-                    is Double -> writableMap.putDouble(key, value)
-                    is Int -> writableMap.putInt(key, value)
-                    is String -> writableMap.putString(key, value)
-                    is Map<*, *> -> writableMap.putMap(key, value.writableMap)
-                    is List<*> -> writableMap.putArray(key, value.writableArray)
-                    is WritableArray -> writableMap.putArray(key, value)
-                    is WritableMap -> writableMap.putMap(key, value)
+                    null -> result.putNull(key)
+                    is Boolean -> result.putBoolean(key, value)
+                    is Double -> result.putDouble(key, value)
+                    is Int -> result.putInt(key, value)
+                    is String -> result.putString(key, value)
+                    is Map<*, *> -> result.putMap(key, value.writableMap)
+                    is List<*> -> result.putArray(key, value.writableArray)
+                    is WritableArray -> result.putArray(key, value)
+                    is WritableMap -> result.putMap(key, value)
                     else -> throw Throwable("Unsupported type ${value.javaClass}")
                 }
             }
