@@ -20,70 +20,81 @@ struct BlueBreezeError : Error {
     // MARK: - State
 
     @objc public func state() -> String {
-        return manager.state.value.export
+        return manager.state.value.toJs
     }
 
     @objc public func stateObserve(onChanged: @escaping (String) -> Void) {
         manager.state
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
+            .sink { onChanged($0.toJs) }
             .store(in: &disposeBag)
     }
 
     // MARK: - Authorization
 
     @objc public func authorizationStatus() -> String {
-        return manager.authorizationStatus.value.export
+        return manager.authorizationStatus.value.toJs
     }
 
     @objc public func authorizationStatusObserve(onChanged: @escaping (String) -> Void) {
         manager.authorizationStatus
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
+            .sink { onChanged($0.toJs) }
             .store(in: &disposeBag)
     }
-
+    
     @objc public func authorizationRequest() {
         manager.authorizationRequest()
+    }
+    
+    @objc public func authorizationOpenSettings() {
+        manager.authorizationOpenSettings()
     }
 
     // MARK: - Scanning
 
-    @objc public func scanningEnabled() -> Bool {
-        return manager.isScanning.value
+    @objc public func scanEnabled() -> Bool {
+        return manager.scanEnabled.value
+    }
+    
+    @objc public func scanResultsObserve(onChanged: @escaping ([String: Any]) -> Void) {
+        return manager.scanResults
+            .receive(on: DispatchQueue.main)
+            .sink { onChanged($0.toJs) }
+            .store(in: &disposeBag)
     }
 
-    @objc public func scanningEnabledObserve(onChanged: @escaping (Bool) -> Void) {
-        return manager.isScanning
+    @objc public func scanEnabledObserve(onChanged: @escaping (Bool) -> Void) {
+        return manager.scanEnabled
             .receive(on: DispatchQueue.main)
             .sink { onChanged($0) }
             .store(in: &disposeBag)
     }
 
-    @objc public func scanningStart() {
-        manager.scanningStart()
+    @objc public func scanStart() {
+        manager.scanStart()
     }
 
-    @objc public func scanningStop() {
-        manager.scanningStop()
+    @objc public func scanStop() {
+        manager.scanStop()
     }
 
     // MARK: - Devices
 
-    @objc public func devices() -> [Dictionary<String, Any>] {
-        return manager.devices.value.values.map { $0.export }
+    @objc public func devices() -> [[String: Any]] {
+        return manager.devices.value.values.map { $0.toJs }
     }
 
-    @objc public func devicesObserve(onChanged: @escaping ([Dictionary<String, Any>]) -> Void) {
+    @objc public func devicesObserve(onChanged: @escaping ([[String: Any]]) -> Void) {
         return manager.devices
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.values.map { $0.export }) }
+            .sink { onChanged($0.values.map { $0.toJs }) }
             .store(in: &disposeBag)
     }
     
     // MARK: - Device services
     
-    @objc public func deviceServices(id: String) -> [Dictionary<String, Any>] {
+    @objc public func deviceServices(id: String) -> [[String: Any]] {
         guard let uuid = UUID(uuidString: id) else {
             return []
         }
@@ -92,10 +103,10 @@ struct BlueBreezeError : Error {
             return []
         }
         
-        return device.services.value.export
+        return device.services.value.toJs
     }
     
-    @objc public func deviceServicesObserve(id: String, onChanged: @escaping ([Dictionary<String, Any>]) -> Void) {
+    @objc public func deviceServicesObserve(id: String, onChanged: @escaping ([[String: Any]]) -> Void) {
         guard let uuid = UUID(uuidString: id) else {
             return
         }
@@ -106,7 +117,7 @@ struct BlueBreezeError : Error {
         
         return device.services
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
+            .sink { onChanged($0.toJs) }
             .store(in: &disposeBag)
     }
     
@@ -121,7 +132,7 @@ struct BlueBreezeError : Error {
             return ""
         }
         
-        return device.connectionStatus.value.export
+        return device.connectionStatus.value.toJs
     }
     
     @objc public func deviceConnectionStatusObserve(id: String, onChanged: @escaping (String) -> Void) {
@@ -135,7 +146,7 @@ struct BlueBreezeError : Error {
         
         return device.connectionStatus
             .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
+            .sink { onChanged($0.toJs) }
             .store(in: &disposeBag)
     }
     
@@ -360,8 +371,20 @@ struct BlueBreezeError : Error {
     }
 }
 
+// MARK: - Helpers
+
+extension BBDevice {
+    func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
+        let service = services.value.first { $0.key == BBUUID(string: serviceId)}
+        let characteristic = service?.value.first { $0.id == BBUUID(string: characteristicId) }
+        return characteristic
+    }
+}
+
+// MARK: - Exporters
+
 extension BBAuthorization {
-    var export: String {
+    var toJs: String {
         switch self {
         case .unknown: return "unknown"
         case .authorized: return "authorized"
@@ -371,7 +394,7 @@ extension BBAuthorization {
 }
 
 extension BBState {
-    var export: String {
+    var toJs: String {
         switch self {
         case .unknown: return "unknown"
         case .poweredOff: return "poweredOff"
@@ -384,7 +407,7 @@ extension BBState {
 }
 
 extension BBCharacteristicProperty {
-    var export: String {
+    var toJs: String {
         switch self {
         case .read: return "read"
         case .writeWithoutResponse: return "writeWithoutResponse"
@@ -394,43 +417,32 @@ extension BBCharacteristicProperty {
     }
 }
 
-extension BBDevice {
-    var export: Dictionary<String, Any> {
-        var result: Dictionary<String, Any> = [
-            "id": id.uuidString,
+extension BBScanResult {
+    var toJs: [String: Any] {
+        [
+            "id": device.id.uuidString,
+            "name": device.name as Any,
             "rssi": rssi,
-            "isConnectable": isConnectable,
+            "connectable": connectable,
             "advertisedServices": advertisedServices.map(\.uuidString),
+            "manufacturerId": manufacturerId as Any,
+            "manufacturerName": manufacturerName as Any,
+            "manufacturerData": manufacturerData?.export as Any,
         ]
-        
-        if let name {
-            result["name"] = name
-        }
-        
-        if let manufacturerId {
-            result["manufacturerId"] = manufacturerId
-        }
-        
-        if let manufacturerName {
-            result["manufacturerName"] = manufacturerName
-        }
-        
-        if let manufacturerData {
-            result["manufacturerData"] = manufacturerData.export
-        }
-        
-        return result;
     }
-    
-    func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
-        let service = services.value.first { $0.key == BBUUID(string: serviceId)}
-        let characteristic = service?.value.first { $0.id == BBUUID(string: characteristicId) }
-        return characteristic
+}
+
+extension BBDevice {
+    var toJs: [String: Any] {
+        [
+            "id": id.uuidString,
+            "name": name as Any,
+        ]
     }
 }
 
 extension BBDeviceConnectionStatus {
-    var export: String {
+    var toJs: String {
         switch self {
         case .connected: return "connected"
         case .disconnected: return "disconnected"
@@ -439,39 +451,35 @@ extension BBDeviceConnectionStatus {
 }
 
 extension BBCharacteristic {
-    var export: Dictionary<String, Any> {
-        var result: Dictionary<String, Any> = [
+    var toJs: [String: Any] {
+        [
             "id": id.uuidString,
-            "properties": properties.map { $0.export }
+            "name": BBConstants.knownCharacteristics[id] as Any,
+            "properties": properties.map { $0.toJs }
         ]
-        
-        if let name = BBConstants.knownCharacteristics[id] {
-            result["name"] = name
-        }
+    }
+}
 
-        return result
+extension [BBCharacteristic] {
+    var toJs: [[String: Any]] {
+        map { $0.toJs }
     }
 }
 
 extension [BBUUID: [BBCharacteristic]] {
-    var export: [Dictionary<String, Any>] {
-        return map { element in
-            var result: Dictionary<String, Any> = [
-                "id": element.key.uuidString,
-                "characteristics": element.value.map { $0.export }
+    var toJs: [[String: Any]] {
+        map {
+            [
+                "id": $0.key.uuidString,
+                "name": BBConstants.knownServices[$0.key] as Any,
+                "characteristics": $0.value.toJs
             ]
-            
-            if let name = BBConstants.knownServices[element.key] {
-                result["name"] = name
-            }
-            
-            return result
         }
     }
 }
 
 extension Data {
     var export: Array<UInt8> {
-        return map { $0 }
+        map { $0 }
     }
 }

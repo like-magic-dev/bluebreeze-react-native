@@ -1,55 +1,55 @@
-import { useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
-import { StyleSheet, Button, FlatList, SafeAreaView, View, Text, TouchableOpacity } from 'react-native';
-import { devices } from 'react-native-bluebreeze';
-import type { BBCharacteristic, BBService } from '../../src/NativeBlueBreeze';
-import CharacteristicScreen from './CharacteristicScreen';
+import { useNavigation } from '@react-navigation/native'
+import { useEffect, useState } from 'react'
+import { Button, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native'
+import BlueBreeze from 'react-native-bluebreeze'
+import type { BBService } from '../../src/implementation/bluebreeze_service'
+import CharacteristicScreen from './CharacteristicScreen'
 
 export default function DeviceScreen({ route }) {
-    const navigation = useNavigation();
+    const navigation = useNavigation()
 
     // Get the device
-    const { deviceId } = route.params;
-    const device = devices().find((device) => (device.id == deviceId));
+    const { deviceId } = route.params
+    const device = BlueBreeze.devices.value?.get(deviceId)
     if (device == undefined) {
         return <View />
     }
 
     // Connection status
 
-    const [status, setStatus] = useState(device.connectionStatus());
+    const [status, setStatus] = useState(device.connectionStatus.value)
 
     useEffect(() => {
-        const subscription = device.connectionStatusEmitter((status) => {
-            setStatus(status);
-        });
+        const subscription = device.connectionStatus.onValue((value) => {
+            setStatus(value)
+        })
 
         return () => {
-            subscription.remove();
-        };
-    }, []);
+            subscription.remove()
+        }
+    }, [])
 
     // Services
 
-    const [services, setServices] = useState(device.services());
+    const [services, setServices] = useState(device.services.value)
 
     useEffect(() => {
-        const subscription = device.servicesEmitter((services) => {
-            setServices(services);
-        });
+        const subscription = device.services.onValue((value) => {
+            setServices(value)
+        })
 
         return () => {
-            subscription.remove();
-        };
-    }, []);
+            subscription.remove()
+        }
+    }, [])
 
     // Header
 
     useEffect(() => {
         navigation.setOptions({
             headerTitle: device?.name,
-        });
-    }, []);
+        })
+    }, [])
 
     useEffect(() => {
         navigation.setOptions({
@@ -57,23 +57,23 @@ export default function DeviceScreen({ route }) {
                 (status == "connected") ? (
                     <Button
                         onPress={async () => {
-                            await device.disconnect();
+                            await device.disconnect()
                         }}
                         title='Disconnect'
                     />
                 ) : (
                     <Button
                         onPress={async () => {
-                            await device.connect();
-                            await device.discoverServices();
-                            await device.requestMTU(512);
+                            await device.connect()
+                            await device.discoverServices()
+                            await device.requestMTU(512)
                         }}
                         title='Connect'
                     />
                 )
             ),
-        });
-    }, [status]);
+        })
+    }, [status])
 
     // Rendering
 
@@ -86,7 +86,7 @@ export default function DeviceScreen({ route }) {
                 keyExtractor={item => item.id}
             />
         </View>
-    );
+    )
 
     return (
         <SafeAreaView style={styles.container}>
@@ -96,7 +96,7 @@ export default function DeviceScreen({ route }) {
                 keyExtractor={item => item.id}
             />
         </SafeAreaView>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
@@ -112,4 +112,4 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: 'bold',
     },
-});
+})
