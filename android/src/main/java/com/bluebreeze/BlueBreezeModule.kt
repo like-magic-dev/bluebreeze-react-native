@@ -17,6 +17,7 @@ import dev.likemagic.bluebreeze.BBManager
 import dev.likemagic.bluebreeze.BBScanResult
 import dev.likemagic.bluebreeze.BBService
 import dev.likemagic.bluebreeze.BBState
+import dev.likemagic.bluebreeze.BBUUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -93,7 +94,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                             emitDeviceServicesEmitter(
                                 writableMapOf(
                                     "id" to deviceId,
-                                    "value" to services
+                                    "value" to services.map { it.toJs }
                                 )
                             )
                         }
@@ -152,7 +153,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                             emitDeviceConnectionStatusEmitter(
                                 writableMapOf(
                                     "id" to deviceId,
-                                    "value" to value,
+                                    "value" to value.toJs,
                                 )
                             )
                         }
@@ -485,13 +486,13 @@ val BBCharacteristicProperty.toJs: String
 
 val BBScanResult.toJs: WritableMap
     get() = writableMapOf(
-        "deviceId" to device.address,
+        "id" to device.address,
         "rssi" to rssi,
-        "isConnectable" to connectable,
-        "advertisedServices" to advertisedServices.map { it.toString() },
+        "connectable" to connectable,
+        "advertisedServices" to advertisedServices.map { it.toJs },
         "manufacturerId" to manufacturerId,
         "manufacturerName" to manufacturerName,
-        "manufacturerData" to manufacturerData,
+        "manufacturerData" to manufacturerData?.toJs,
     )
 
 val BBDevice.toJs: WritableMap
@@ -526,6 +527,9 @@ val ByteArray.toJs: WritableArray
         forEach { result.pushInt(it.toInt()) }
         return result
     }
+
+val BBUUID.toJs: String
+    get() = toString()
 
 /// Functions to collect data asynchronously
 
