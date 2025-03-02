@@ -1,9 +1,12 @@
+import { useNavigation } from '@react-navigation/native'
 import { useEffect, useState } from 'react'
 import { Button, SafeAreaView, StyleSheet, Text, } from 'react-native'
 import BlueBreeze from 'react-native-bluebreeze'
 import ScanScreen from './ScanScreen'
 
 export default function HomeScreen() {
+    const navigation = useNavigation()
+
     // BLE state
 
     const [state, setState] = useState(BlueBreeze.state.value)
@@ -32,15 +35,21 @@ export default function HomeScreen() {
         }
     }, [])
 
+    // Header
+
+    useEffect(() => {
+        if (authorization != 'authorized') {
+            navigation.setOptions({ title: 'BLE Authorization' })
+        } else if (state != 'poweredOn') {
+            navigation.setOptions({ title: 'BLE Offline' })
+        } else {
+            navigation.setOptions({ title: 'BLE Scan' })
+        }
+    }, [state, authorization])
+
     // Rendering
 
-    if (state != 'poweredOn') {
-        return (
-            <SafeAreaView style={styles.container}>
-                <Text>Bluetooth offline</Text>
-            </SafeAreaView>
-        )
-    } else if (authorization != 'authorized') {
+    if (authorization != 'authorized') {
         return (
             <SafeAreaView style={styles.container}>
                 {(authorization == 'unknown') ? (
@@ -54,6 +63,12 @@ export default function HomeScreen() {
                         onPress={() => BlueBreeze.authorizationOpenSettings()}
                     />
                 )}
+            </SafeAreaView>
+        )
+    } else if (state != 'poweredOn') {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text>Bluetooth offline</Text>
             </SafeAreaView>
         )
     } else {

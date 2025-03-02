@@ -9,11 +9,11 @@ export default function ScanScreen() {
 
     // Scanning status
 
-    const [scanning, setScanning] = useState(BlueBreeze.scanEnabled.value)
+    const [scanEnabled, setScanEnabled] = useState(BlueBreeze.scanEnabled.value)
 
     useEffect(() => {
         const subscription = BlueBreeze.scanEnabled.onValue((value) => {
-            setScanning(value)
+            setScanEnabled(value)
         })
 
         return () => {
@@ -43,14 +43,14 @@ export default function ScanScreen() {
     useEffect(() => {
         navigation.setOptions({
             headerRight: () => (
-                (scanning) ? (
+                (scanEnabled) ? (
                     <Button onPress={() => BlueBreeze.scanStop()} title='Stop' />
                 ) : (
                     <Button onPress={() => BlueBreeze.scanStart()} title='Start' />
                 )
             ),
         })
-    }, [scanning])
+    }, [scanEnabled])
 
     // Rendering
 
