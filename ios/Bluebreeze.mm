@@ -36,7 +36,7 @@
         
         [impl scanEnabledObserveOnChanged:^(BOOL status) {
             if (self->_eventEmitterCallback != nil) {
-                [self emitScanEnabledEmitter:[NSNumber numberWithBool:status]];
+                [self emitScanEnabledEmitter:status];
             }
         }];
         
