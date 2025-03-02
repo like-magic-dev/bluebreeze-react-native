@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Button, Modal, StyleSheet, Text, TextInput, View } from 'react-native';
-import type { BBCharacteristic } from '../../src/NativeBlueBreeze';
+import { useEffect, useState } from 'react'
+import { Button, Modal, StyleSheet, Text, TextInput, View } from 'react-native'
+import type { BBCharacteristic } from '../../src/implementation/bluebreeze_characteristic'
 
 function CharacteristicWriteScreen({ characteristic, onDone }: { characteristic: BBCharacteristic, onDone: () => void }) {
-    const [writeValue, setWriteValue] = useState<number[]>([]);
-    const [writeValueError, setWriteValueError] = useState(false);
+    const [writeValue, setWriteValue] = useState<number[]>([])
+    const [writeValueError, setWriteValueError] = useState(false)
 
-    const canWriteWithResponse = characteristic.properties.indexOf("writeWithResponse") >= 0;
+    const canWriteWithResponse = characteristic.properties.indexOf("writeWithResponse") >= 0
 
     return (
         <View style={[styles.flex, styles.writeModal]}>
@@ -16,95 +16,95 @@ function CharacteristicWriteScreen({ characteristic, onDone }: { characteristic:
                     style={styles.textInput}
                     placeholder='Value'
                     onChangeText={(text) => {
-                        const filteredText = text.replace(/[^0-9a-fA-F]/g, '');
+                        const filteredText = text.replace(/[^0-9a-fA-F]/g, '')
                         if (filteredText != text) {
-                            setWriteValueError(true);
-                            return;
+                            setWriteValueError(true)
+                            return
                         }
 
-                        const tokens = filteredText.split(/(.{2})/).filter(x => (x.length == 2));
-                        setWriteValue(tokens.map((v) => parseInt(v, 16)));
-                        setWriteValueError(false);
+                        const tokens = filteredText.split(/(.{2})/).filter(x => (x.length == 2))
+                        setWriteValue(tokens.map((v) => parseInt(v, 16)))
+                        setWriteValueError(false)
                     }}
                 />
-                { (!writeValueError) ? (
+                {(!writeValueError) ? (
                     <Text>{writeValue.map((v) => v.toString(16).padStart(2, '0').toUpperCase()).join(' ')}</Text>
                 ) : (
                     <Text style={styles.error}>INVALID HEX</Text>
-                ) }
+                )}
                 <View style={[styles.hstack]}>
                     <Button title={"Cancel"} onPress={() => onDone()} />
                     <View style={styles.flex} />
-                    <Button 
+                    <Button
                         disabled={writeValueError}
-                        title={"Write"} 
+                        title={"Write"}
                         onPress={() => {
-                            characteristic.write(writeValue, canWriteWithResponse);
-                            onDone();
-                        }} 
-                        />
+                            characteristic.write(writeValue, canWriteWithResponse)
+                            onDone()
+                        }}
+                    />
                 </View>
             </View>
         </View>
-    );
+    )
 }
 
 export default function CharacteristicScreen({ characteristic }: { characteristic: BBCharacteristic }) {
     // Data value
 
-    const [data, setData] = useState(characteristic.data());
+    const [data, setData] = useState(characteristic.data.value)
 
     useEffect(() => {
-        const subscription = characteristic.dataEmitter((data) => {
-            setData(data);
-        });
+        const subscription = characteristic.data.onValue((value) => {
+            setData(value)
+        })
 
         return () => {
-            subscription.remove();
-        };
-    }, []);
+            subscription.remove()
+        }
+    }, [])
 
     // Notify status
 
-    const [notifyEnabled, setNotifyEnabled] = useState(characteristic.notifyEnabled());
+    const [notifyEnabled, setNotifyEnabled] = useState(characteristic.notifyEnabled.value)
 
     useEffect(() => {
-        const subscription = characteristic.notifyEnabledEmitter((value) => {
-            setNotifyEnabled(value);
-        });
+        const subscription = characteristic.notifyEnabled.onValue((value) => {
+            setNotifyEnabled(value)
+        })
 
         return () => {
-            subscription.remove();
-        };
-    }, []);
+            subscription.remove()
+        }
+    }, [])
 
     // Computed properties
 
-    const canRead = characteristic.properties.indexOf("read") >= 0;
-    const canWriteWithoutResponse = characteristic.properties.indexOf("writeWithoutResponse") >= 0;
-    const canWriteWithResponse = characteristic.properties.indexOf("writeWithResponse") >= 0;
-    const canWrite = canWriteWithoutResponse || canWriteWithResponse;
-    const canNotify = characteristic.properties.indexOf("notify") >= 0;
+    const canRead = characteristic.properties.indexOf("read") >= 0
+    const canWriteWithoutResponse = characteristic.properties.indexOf("writeWithoutResponse") >= 0
+    const canWriteWithResponse = characteristic.properties.indexOf("writeWithResponse") >= 0
+    const canWrite = canWriteWithoutResponse || canWriteWithResponse
+    const canNotify = characteristic.properties.indexOf("notify") >= 0
 
     // Rendering
 
-    const [writeVisible, setWriteVisible] = useState(false);
+    const [writeVisible, setWriteVisible] = useState(false)
 
     return (
         <View style={[styles.item, styles.vstack]}>
             <Text style={styles.title}>{characteristic.name ?? characteristic.id}</Text>
-            <Text style={styles.subtitle}>{data.map((v) => v.toString(16).padStart(2, '0')).join(' ')}</Text>
+            <Text style={styles.subtitle}>{data?.map((v) => v.toString(16).padStart(2, '0')).join(' ')}</Text>
             <Modal
                 animationType="slide"
                 transparent={true}
                 visible={writeVisible}
                 onRequestClose={() => {
-                    setWriteVisible(false);
+                    setWriteVisible(false)
                 }}>
                 <CharacteristicWriteScreen
                     characteristic={characteristic}
                     onDone={() => {
-                        setWriteVisible(false);
+                        setWriteVisible(false)
                     }}
                 />
             </Modal>
@@ -127,7 +127,7 @@ export default function CharacteristicScreen({ characteristic }: { characteristi
                 )}
             </View>
         </View>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
@@ -172,4 +172,4 @@ const styles = StyleSheet.create({
     error: {
         color: 'red',
     }
-});
+})

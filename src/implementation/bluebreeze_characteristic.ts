@@ -1,4 +1,4 @@
-import { deviceCharacteristicData, deviceCharacteristicNotifyEnabled, deviceCharacteristicRead, deviceCharacteristicSubscribe, deviceCharacteristicUnsubscribe, deviceCharacteristicWrite } from "react-native-bluebreeze"
+import BlueBreeze from "react-native-bluebreeze"
 import type { StateEventEmitter } from "./emitters"
 
 export class BBCharacteristic {
@@ -13,13 +13,13 @@ export class BBCharacteristic {
         this.name = name
         this.properties = properties
 
-        this.data = deviceCharacteristicData(deviceId, serviceId, id)
-        this.notifyEnabled = deviceCharacteristicNotifyEnabled(deviceId, serviceId, id)
+        this.data = BlueBreeze.deviceCharacteristicData(deviceId, serviceId, id)
+        this.notifyEnabled = BlueBreeze.deviceCharacteristicNotifyEnabled(deviceId, serviceId, id)
 
-        this.read = () => deviceCharacteristicRead(deviceId, serviceId, id)
-        this.write = (data: number[], withResponse: boolean) => deviceCharacteristicWrite(deviceId, serviceId, id, data, withResponse)
-        this.subscribe = () => deviceCharacteristicSubscribe(deviceId, serviceId, id)
-        this.unsubscribe = () => deviceCharacteristicUnsubscribe(deviceId, serviceId, id)
+        this.read = () => BlueBreeze.deviceCharacteristicRead(deviceId, serviceId, id)
+        this.write = (data: number[], withResponse: boolean) => BlueBreeze.deviceCharacteristicWrite(deviceId, serviceId, id, data, withResponse)
+        this.subscribe = () => BlueBreeze.deviceCharacteristicSubscribe(deviceId, serviceId, id)
+        this.unsubscribe = () => BlueBreeze.deviceCharacteristicUnsubscribe(deviceId, serviceId, id)
     }
 
     id: string

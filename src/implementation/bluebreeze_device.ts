@@ -1,4 +1,4 @@
-import { deviceConnect, deviceConnectionStatus, deviceDisconnect, deviceDiscoverServices, deviceMTU, deviceRequestMTU, deviceServices } from "react-native-bluebreeze"
+import BlueBreeze from "react-native-bluebreeze"
 import type { BBService } from "./bluebreeze_service"
 import { StateEventEmitter } from "./emitters"
 
@@ -10,14 +10,14 @@ export class BBDevice {
         this.id = id
         this.name = name
 
-        this.services = deviceServices(id)
-        this.connectionStatus = deviceConnectionStatus(id)
-        this.mtu = deviceMTU(id)
+        this.services = BlueBreeze.deviceServices(id)
+        this.connectionStatus = BlueBreeze.deviceConnectionStatus(id)
+        this.mtu = BlueBreeze.deviceMTU(id)
 
-        this.connect = () => deviceConnect(id)
-        this.disconnect = () => deviceDisconnect(id)
-        this.discoverServices = () => deviceDiscoverServices(id)
-        this.requestMTU = (mtu: number) => deviceRequestMTU(id, mtu)
+        this.connect = () => BlueBreeze.deviceConnect(id)
+        this.disconnect = () => BlueBreeze.deviceDisconnect(id)
+        this.discoverServices = () => BlueBreeze.deviceDiscoverServices(id)
+        this.requestMTU = (mtu: number) => BlueBreeze.deviceRequestMTU(id, mtu)
     }
 
     id: string
