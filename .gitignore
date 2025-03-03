@@ -82,3 +82,4 @@ ios/generated
 android/generated
 .yarn
 
+.env
