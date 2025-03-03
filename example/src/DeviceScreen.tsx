@@ -57,16 +57,24 @@ export default function DeviceScreen({ route }) {
                 (status == "connected") ? (
                     <Button
                         onPress={async () => {
-                            await device.disconnect()
+                            try {
+                                await device.disconnect()
+                            } catch (e) {
+                                console.error(e)
+                            }
                         }}
                         title='Disconnect'
                     />
                 ) : (
                     <Button
                         onPress={async () => {
-                            await device.connect()
-                            await device.discoverServices()
-                            await device.requestMTU(512)
+                            try {
+                                await device.connect()
+                                await device.discoverServices()
+                                await device.requestMTU(512)
+                            } catch (e) {
+                                console.error(e)
+                            }
                         }}
                         title='Connect'
                     />
