@@ -39,7 +39,12 @@ function CharacteristicWriteScreen({ characteristic, onDone }: { characteristic:
                         disabled={writeValueError}
                         title={"Write"}
                         onPress={() => {
-                            characteristic.write(writeValue, canWriteWithResponse)
+                            try {
+                                characteristic.write(writeValue, canWriteWithResponse)
+                            } catch (e) {
+                                console.error(e)
+                            }
+
                             onDone()
                         }}
                     />
@@ -111,7 +116,13 @@ export default function CharacteristicScreen({ characteristic }: { characteristi
             <View style={[styles.flex, styles.hstack]}>
                 <View style={styles.flex} />
                 {(canRead) && (
-                    <Button title={"Read"} onPress={() => characteristic.read()} />
+                    <Button title={"Read"} onPress={() => {
+                        try {
+                            characteristic.read()
+                        } catch (e) {
+                            console.error(e)
+                        }
+                    }} />
                 )}
                 {(canWrite) && (
                     <Button
@@ -120,9 +131,21 @@ export default function CharacteristicScreen({ characteristic }: { characteristi
                 )}
                 {(canNotify) && (
                     (notifyEnabled) ? (
-                        <Button title={"Unsubscribe"} onPress={() => characteristic.unsubscribe()} />
+                        <Button title={"Unsubscribe"} onPress={() => {
+                            try {
+                                characteristic.unsubscribe()
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        }} />
                     ) : (
-                        <Button title={"Subscribe"} onPress={() => characteristic.subscribe()} />
+                        <Button title={"Subscribe"} onPress={() => {
+                            try {
+                                characteristic.subscribe()
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        }} />
                     )
                 )}
             </View>
