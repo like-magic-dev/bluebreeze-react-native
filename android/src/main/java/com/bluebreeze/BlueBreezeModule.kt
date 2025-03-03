@@ -111,9 +111,9 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                                             emitDeviceCharacteristicDataEmitter(
                                                 writableMapOf(
                                                     "id" to deviceId,
-                                                    "serviceId" to serviceId,
-                                                    "characteristicId" to characteristicId,
-                                                    "value" to value
+                                                    "serviceId" to serviceId.toJs,
+                                                    "characteristicId" to characteristicId.toJs,
+                                                    "value" to value.toJs
                                                 )
                                             )
                                         }
@@ -130,8 +130,8 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                                             emitDeviceCharacteristicNotifyEnabledEmitter(
                                                 writableMapOf(
                                                     "id" to deviceId,
-                                                    "serviceId" to serviceId,
-                                                    "characteristicId" to characteristicId,
+                                                    "serviceId" to serviceId.toJs,
+                                                    "characteristicId" to characteristicId.toJs,
                                                     "value" to value
                                                 )
                                             )
