@@ -39,13 +39,11 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
     private val trackedDeviceCharacteristicData = mutableSetOf<String>()
     private val trackedDeviceCharacteristicNotifyEnabled = mutableSetOf<String>()
 
-    private fun safeEmit(block: () -> (Unit)) {
-        if (mEventEmitterCallback != null) {
-            block()
-        }
-    }
+    // Lifecycle
 
-    init {
+    override fun initialize() {
+        super.initialize()
+
         // State
 
         manager.state.collectAsync {
@@ -236,8 +234,12 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            device.connect()
-            promise?.resolve(null)
+            try {
+                device.connect()
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -248,8 +250,12 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            device.disconnect()
-            promise?.resolve(null)
+            try {
+                device.disconnect()
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -260,8 +266,12 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            device.discoverServices()
-            promise?.resolve(null)
+            try {
+                device.discoverServices()
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -272,8 +282,12 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            val result = device.requestMTU(mtu.toInt())
-            promise?.resolve(result)
+            try {
+                val result = device.requestMTU(mtu.toInt())
+                promise?.resolve(result)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -339,8 +353,13 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            val result = characteristic.read()
-            promise?.resolve(result.toJs)
+            try {
+                val result = characteristic.read()
+                promise?.resolve(result.toJs)
+
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -377,11 +396,15 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            characteristic.write(
-                data = writeValue,
-                withResponse = withResponse,
-            )
-            promise?.resolve(null)
+            try {
+                characteristic.write(
+                    data = writeValue,
+                    withResponse = withResponse,
+                )
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -411,8 +434,12 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            characteristic.subscribe()
-            promise?.resolve(null)
+            try {
+                characteristic.subscribe()
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
     }
 
@@ -442,9 +469,21 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
         }
 
         async {
-            characteristic.unsubscribe()
-            promise?.resolve(null)
+            try {
+                characteristic.unsubscribe()
+                promise?.resolve(null)
+            } catch (e: Throwable) {
+                promise?.reject(e)
+            }
         }.storeIn(jobs)
+    }
+
+    // Helper for safely emitting data
+
+    private fun safeEmit(block: () -> (Unit)) {
+        if (mEventEmitterCallback != null) {
+            block()
+        }
     }
 
     // Module name
