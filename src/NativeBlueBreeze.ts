@@ -78,7 +78,7 @@ export interface Spec extends TurboModule {
     scanEnabled(): boolean
     readonly scanEnabledEmitter: EventEmitter<boolean>
     readonly scanResultEmitter: EventEmitter<SpecScanResult>
-    scanStart(): void
+    scanStart(ids?: string[]): void
     scanStop(): void
 
     // Devices

@@ -47,7 +47,7 @@ NativeBlueBreeze.scanResultEmitter((value) => {
     scanResults.add(convertScanResult(device, value))
 })
 
-const scanStart = NativeBlueBreeze.scanStart
+const scanStart = (ids: string[] | undefined = undefined) => NativeBlueBreeze.scanStart(ids)
 
 const scanStop = NativeBlueBreeze.scanStop
 

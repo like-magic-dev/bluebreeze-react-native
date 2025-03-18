@@ -155,8 +155,8 @@ RCT_EXPORT_MODULE()
     return [NSNumber numberWithBool:[impl scanEnabled]];
 }
 
-- (void)scanStart {
-    [impl scanStart];
+- (void)scanStart:(NSArray *)ids {
+    [impl scanStart:ids];
 }
 
 - (void)scanStop {

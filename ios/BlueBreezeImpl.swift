@@ -71,8 +71,9 @@ struct BlueBreezeError : Error {
             .store(in: &disposeBag)
     }
 
-    @objc public func scanStart() {
-        manager.scanStart()
+    @objc public func scanStart(_ ids: [String]?) {
+        let serviceUuids = ids?.map { BBUUID(string: $0) }
+        manager.scanStart(serviceUuids: serviceUuids)
     }
 
     @objc public func scanStop() {

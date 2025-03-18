@@ -199,7 +199,13 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
     override fun scanEnabled(): Boolean = manager.scanEnabled.value
 
-    override fun scanStart() = manager.scanStart(context)
+    override fun scanStart(ids: ReadableArray?) {
+        val serviceUUIDs = ids?.toArrayList()?.map { BBUUID.fromString(it as String) }
+        manager.scanStart(
+            context,
+            serviceUUIDs = serviceUUIDs
+        )
+    }
 
     override fun scanStop() = manager.scanStop(context)
 
