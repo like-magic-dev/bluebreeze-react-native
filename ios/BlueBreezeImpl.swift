@@ -319,8 +319,8 @@ struct BlueBreezeError : Error {
             throw BlueBreezeError(description: "Characteristic not found")
         }
         
-        /*let data =*/ try await characteristic.read()
-        return []
+        let data = try await characteristic.read()
+        return data?.export ?? []
     }
     
     @objc public func deviceCharacteristicWrite(id: String, serviceId: String, characteristicId: String, data: Array<UInt8>, withResponse: Bool) async throws {
