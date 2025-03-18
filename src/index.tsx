@@ -1,24 +1,27 @@
+import type { BBAuthorization } from './implementation/bluebreeze_authorization'
 import { BBCharacteristic } from './implementation/bluebreeze_characteristic'
 import { BBDevice } from './implementation/bluebreeze_device'
 import { BBScanResult } from './implementation/bluebreeze_scan_result'
 import { BBService } from './implementation/bluebreeze_service'
+import type { BBState } from './implementation/bluebreeze_state'
 import { EventEmitter, StateEventEmitter } from './implementation/emitters'
 import NativeBlueBreeze, { type SpecDevice, type SpecDeviceCharacteristic, type SpecDeviceService, type SpecScanResult } from './NativeBlueBreeze'
 
+
 // State
 
-const state = new StateEventEmitter<string>(NativeBlueBreeze.state())
+const state = new StateEventEmitter<BBState>(NativeBlueBreeze.state() as BBState)
 
 NativeBlueBreeze.stateEmitter((value) => {
-    state.add(value)
+    state.add(value as BBState)
 })
 
 // Authorization to use BLE
 
-const authorizationStatus = new StateEventEmitter<string>(NativeBlueBreeze.authorizationStatus())
+const authorizationStatus = new StateEventEmitter<BBAuthorization>(NativeBlueBreeze.authorizationStatus() as BBAuthorization)
 
 NativeBlueBreeze.authorizationStatusEmitter((value) => {
-    authorizationStatus.add(value)
+    authorizationStatus.add(value as BBAuthorization)
 })
 
 const authorizationRequest = NativeBlueBreeze.authorizationRequest
