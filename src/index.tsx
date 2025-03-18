@@ -283,7 +283,6 @@ const convertDeviceCharacteristic = (
 
 // Export
 
-
 export default {
     state,
     authorizationStatus,
@@ -308,3 +307,11 @@ export default {
     deviceCharacteristicSubscribe,
     deviceCharacteristicUnsubscribe,
 }
+
+export {
+    BBCharacteristic, BBDevice,
+    BBScanResult,
+    BBService, EventEmitter,
+    StateEventEmitter, type BBAuthorization, type BBState
+}
+
