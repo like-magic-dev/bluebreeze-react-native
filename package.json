@@ -1,6 +1,6 @@
 {
   "name": "react-native-bluebreeze",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "BlueBreeze bindings for React Native. A modern Bluetooth LE library.",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
