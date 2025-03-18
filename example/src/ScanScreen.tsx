@@ -64,7 +64,7 @@ export default function ScanScreen() {
             <View style={styles.listItem}>
                 <View style={styles.hstack}>
                     <View style={[styles.vstack, styles.container]}>
-                        <Text style={styles.deviceName}>{scanResult.name ?? '-'}</Text>
+                        <Text style={styles.deviceName}>{scanResult.name ?? scanResult.device.name ?? '-'}</Text>
                         <Text style={styles.deviceManufacturer}>{scanResult.manufacturerName ?? '-'}</Text>
                     </View>
                     <Text style={styles.rssi}>{scanResult.rssi}</Text>
