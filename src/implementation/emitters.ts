@@ -12,7 +12,16 @@ export class EventEmitter<T> extends _EventEmitter {
     onValue: (handler: (v: T) => void) => EmitterSubscription = (handler) => {
         return this.addListener('value', handler)
     }
+
+    map: <U>(mapping: (v: T) => U) => EventEmitter<U> = <U>(mapping: (v: T) => U) => {
+        const emitter = new EventEmitter<U>()
+        this.onValue((v) => {
+            emitter.add(mapping(v))
+        })
+        return emitter
+    }
 }
+
 export class StateEventEmitter<T> extends EventEmitter<T> {
     constructor(initialValue: T | undefined = undefined) {
         super()
@@ -25,4 +34,14 @@ export class StateEventEmitter<T> extends EventEmitter<T> {
     }
 
     value: T | undefined
+
+    map: <U>(mapping: (v: T) => U) => StateEventEmitter<U> = <U>(mapping: (v: T) => U) => {
+        const emitter = new StateEventEmitter<U>(
+            (this.value !== undefined) ? mapping(this.value) : undefined
+        )
+        this.onValue((v) => {
+            emitter.add(mapping(v))
+        })
+        return emitter
+    }
 }
