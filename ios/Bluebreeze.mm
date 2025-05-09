@@ -13,77 +13,87 @@
 - (instancetype) init {
     self = [super init];
     if (self) {
-        impl = [[BlueBreezeImpl alloc] initWithStateObserve:^(NSString * _Nonnull status) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitStateEmitter:status];
-            }
-        } authorizationObserve:^(NSString * _Nonnull status) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitAuthorizationStatusEmitter:status];
-            }
-        } scanEnabledObserve:^(BOOL status) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitScanEnabledEmitter:status];
-            }
-        } scanResultsObserve:^(NSDictionary<NSString *,id> * _Nonnull scanResult) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitScanResultEmitter:scanResult];
-            }
-        } devicesObserve:^(NSArray<id<NSObject>> *devices) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDevicesEmitter:devices];
-            }
-        } deviceConnectionStatusObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull value) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDeviceConnectionStatusEmitter:@{
-                    @"id": deviceId,
-                    @"value": value
-                }];
-            }
-        } deviceServicesObserve:^(NSString * _Nonnull deviceId, NSArray<NSDictionary<NSString *,id> *> * _Nonnull value) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDeviceServicesEmitter:@{
-                    @"id": deviceId,
-                    @"value": value
-                }];
-            }
-        } deviceMTUObserve:^(NSString * _Nonnull deviceId, NSInteger value) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDeviceMTUEmitter:@{
-                    @"id": deviceId,
-                    @"value": [NSNumber numberWithInt:value]
-                }];
-            }
-        } deviceCharacteristicDataObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull serviceId, NSString * _Nonnull characteristicId, NSArray<NSNumber *> * _Nonnull value) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDeviceCharacteristicDataEmitter:@{
-                    @"id": deviceId,
-                    @"serviceId": serviceId,
-                    @"characteristicId": characteristicId,
-                    @"value": value
-                }];
-            }
-        } deviceCharacteristicNotifyEnabledObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull serviceId, NSString * _Nonnull characteristicId, BOOL value) {
-            if (self->_eventEmitterCallback != nil) {
-                [self emitDeviceCharacteristicNotifyEnabledEmitter:@{
-                    @"id": deviceId,
-                    @"serviceId": serviceId,
-                    @"characteristicId": characteristicId,
-                    @"value": [NSNumber numberWithBool:value]
-                }];
-            }
-        }];
-        
-        trackedDeviceServices = [NSMutableArray new];
-        trackedDeviceConnectionStatus = [NSMutableArray new];
-        trackedDeviceMTU = [NSMutableArray new];
-        
-        trackedDeviceCharacteristicData = [NSMutableArray new];
-        trackedDeviceCharacteristicNotifyEnabled = [NSMutableArray new];
-        
-        [impl initialize];
+        impl = [BlueBreezeImpl new];
     }
     return self;
+}
+
+// MARK: - Initialization and deinitialization
+
+typedef void (^EmitterCallback)();
+
+- (void)wrapEventEmitter:(EmitterCallback)callback {
+    if (self->_eventEmitterCallback != nil) {
+        callback();
+    }
+}
+
+- (void)initialize {
+    [impl subscribeWithStateObserve:^(NSString * _Nonnull status) {
+        [self wrapEventEmitter:^{
+            [self emitStateEmitter:status];
+        }];
+    } authorizationObserve:^(NSString * _Nonnull status) {
+        [self wrapEventEmitter:^{
+            [self emitAuthorizationStatusEmitter:status];
+        }];
+    } scanEnabledObserve:^(BOOL status) {
+        [self wrapEventEmitter:^{
+            [self emitScanEnabledEmitter:status];
+        }];
+    } scanResultsObserve:^(NSDictionary<NSString *,id> * _Nonnull scanResult) {
+        [self wrapEventEmitter:^{
+            [self emitScanResultEmitter:scanResult];
+        }];
+    } devicesObserve:^(NSArray<id<NSObject>> *devices) {
+        [self wrapEventEmitter:^{
+            [self emitDevicesEmitter:devices];
+        }];
+    } deviceConnectionStatusObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceConnectionStatusEmitter:@{
+                @"id": deviceId,
+                @"value": value
+            }];
+        }];
+    } deviceServicesObserve:^(NSString * _Nonnull deviceId, NSArray<NSDictionary<NSString *,id> *> * _Nonnull value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceServicesEmitter:@{
+                @"id": deviceId,
+                @"value": value
+            }];
+        }];
+    } deviceMTUObserve:^(NSString * _Nonnull deviceId, NSInteger value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceMTUEmitter:@{
+                @"id": deviceId,
+                @"value": [NSNumber numberWithInt:value]
+            }];
+        }];
+    } deviceCharacteristicDataObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull serviceId, NSString * _Nonnull characteristicId, NSArray<NSNumber *> * _Nonnull value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceCharacteristicDataEmitter:@{
+                @"id": deviceId,
+                @"serviceId": serviceId,
+                @"characteristicId": characteristicId,
+                @"value": value
+            }];
+        }];
+    } deviceCharacteristicNotifyEnabledObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull serviceId, NSString * _Nonnull characteristicId, BOOL value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceCharacteristicNotifyEnabledEmitter:@{
+                @"id": deviceId,
+                @"serviceId": serviceId,
+                @"characteristicId": characteristicId,
+                @"value": [NSNumber numberWithBool:value]
+            }];
+        }];
+    }];
+    
+}
+
+- (void)invalidate {
+    [impl unsubscribe];
 }
 
 RCT_EXPORT_MODULE()
@@ -92,6 +102,10 @@ RCT_EXPORT_MODULE()
 (const facebook::react::ObjCTurboModule::InitParams &)params
 {
     return std::make_shared<facebook::react::NativeBlueBreezeSpecJSI>(params);
+}
+
+- (void)setEventEmitterCallback:(EventEmitterCallbackWrapper *)eventEmitterCallbackWrapper {
+    [super setEventEmitterCallback:eventEmitterCallbackWrapper];
 }
 
 // MARK: - State

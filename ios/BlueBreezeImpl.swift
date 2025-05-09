@@ -20,18 +20,18 @@ struct BlueBreezeError : Error {
 
     let manager = BBManager()
     
-    let stateObserve: (String) -> Void
-    let authorizationObserve: (String) -> Void
-    let scanResultsObserve: ([String: Any]) -> Void
-    let scanEnabledObserve: (Bool) -> Void
-    let devicesObserve: ([[String: Any]]) -> Void
-    let deviceConnectionStatusObserve: ((String, String) -> Void)
-    let deviceServicesObserve: ((String, [[String: Any]]) -> Void)
-    let deviceMTUObserve: ((String, Int) -> Void)
-    let deviceCharacteristicDataObserve: ((String, String, String, Array<UInt8>) -> Void)
-    let deviceCharacteristicNotifyEnabledObserve: ((String, String, String, Bool) -> Void)
-
-    @objc public init(
+    var stateObserve: ((String) -> Void)?
+    var authorizationObserve: ((String) -> Void)?
+    var scanResultsObserve: (([String: Any]) -> Void)?
+    var scanEnabledObserve: ((Bool) -> Void)?
+    var devicesObserve: (([[String: Any]]) -> Void)?
+    var deviceConnectionStatusObserve: ((String, String) -> Void)?
+    var deviceServicesObserve: ((String, [[String: Any]]) -> Void)?
+    var deviceMTUObserve: ((String, Int) -> Void)?
+    var deviceCharacteristicDataObserve: ((String, String, String, Array<UInt8>) -> Void)?
+    var deviceCharacteristicNotifyEnabledObserve: ((String, String, String, Bool) -> Void)?
+    
+    @objc public func subscribe(
         stateObserve: (@escaping (String) -> Void),
         authorizationObserve: (@escaping (String) -> Void),
         scanEnabledObserve: (@escaping (Bool) -> Void),
@@ -53,41 +53,39 @@ struct BlueBreezeError : Error {
         self.deviceMTUObserve = deviceMTUObserve
         self.deviceCharacteristicDataObserve = deviceCharacteristicDataObserve
         self.deviceCharacteristicNotifyEnabledObserve = deviceCharacteristicNotifyEnabledObserve
-    }
-    
-    @objc public func initialize() {
+
         manager.state
             .receive(on: DispatchQueue.main)
-            .sink { self.stateObserve($0.toJs) }
+            .sink { self.stateObserve?($0.toJs) }
             .store(in: &disposeBag)
         
         manager.authorizationStatus
             .receive(on: DispatchQueue.main)
-            .sink { self.authorizationObserve($0.toJs) }
+            .sink { self.authorizationObserve?($0.toJs) }
             .store(in: &disposeBag)
         
         manager.scanEnabled
             .receive(on: DispatchQueue.main)
-            .sink { self.scanEnabledObserve($0) }
+            .sink { self.scanEnabledObserve?($0) }
             .store(in: &disposeBag)
         
         manager.scanResults
             .receive(on: DispatchQueue.main)
-            .sink { self.scanResultsObserve($0.toJs) }
+            .sink { self.scanResultsObserve?($0.toJs) }
             .store(in: &disposeBag)
         
         manager.devices
             .receive(on: DispatchQueue.main)
             .sink {
                 $0.forEach { (id, device) in
-                    self.initializeDevice(device)
+                    self.subscribeDevice(device)
                 }
-                self.devicesObserve($0.values.map { $0.toJs })
+                self.devicesObserve?($0.values.map { $0.toJs })
             }
             .store(in: &disposeBag)
     }
     
-    private func initializeDevice(_ device: BBDevice) {
+    private func subscribeDevice(_ device: BBDevice) {
         guard disposeBagDevices[device.id] == nil else {
             return
         }
@@ -96,24 +94,24 @@ struct BlueBreezeError : Error {
 
         device.connectionStatus
             .receive(on: DispatchQueue.main)
-            .sink { self.deviceConnectionStatusObserve(device.id.toJs, $0.toJs) }
+            .sink { self.deviceConnectionStatusObserve?(device.id.toJs, $0.toJs) }
             .store(in: &disposeBagDevices[device.id]!)
 
         device.services
             .receive(on: DispatchQueue.main)
             .sink {
-                self.initializeServices(device, $0)
-                self.deviceServicesObserve(device.id.toJs, $0.toJs)
+                self.subscribeServices(device, $0)
+                self.deviceServicesObserve?(device.id.toJs, $0.toJs)
             }
             .store(in: &disposeBagDevices[device.id]!)
 
         device.mtu
             .receive(on: DispatchQueue.main)
-            .sink { self.deviceMTUObserve(device.id.toJs, $0) }
+            .sink { self.deviceMTUObserve?(device.id.toJs, $0) }
             .store(in: &disposeBagDevices[device.id]!)
     }
 
-    private func initializeServices(_ device: BBDevice, _ services: [BBUUID: [BBCharacteristic]]) {
+    private func subscribeServices(_ device: BBDevice, _ services: [BBUUID: [BBCharacteristic]]) {
         // Clean up device data by removing missing services
         disposeBagServices[device.id] =
             disposeBagServices[device.id]?.filter({ key, value in
@@ -139,7 +137,7 @@ struct BlueBreezeError : Error {
                 characteristic.isNotifying
                     .receive(on: DispatchQueue.main)
                     .sink {
-                        self.deviceCharacteristicNotifyEnabledObserve(
+                        self.deviceCharacteristicNotifyEnabledObserve?(
                             device.id.toJs,
                             serviceId.toJs,
                             characteristic.id.toJs,
@@ -151,7 +149,7 @@ struct BlueBreezeError : Error {
                 characteristic.data
                     .receive(on: DispatchQueue.main)
                     .sink {
-                        self.deviceCharacteristicDataObserve(
+                        self.deviceCharacteristicDataObserve?(
                             device.id.toJs,
                             serviceId.toJs,
                             characteristic.id.toJs,
@@ -161,6 +159,23 @@ struct BlueBreezeError : Error {
                     .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
             }
         }
+    }
+    
+    @objc public func unsubscribe() {
+        disposeBagServices = [:]
+        disposeBagDevices = [:]
+        disposeBag = []
+
+        self.stateObserve = nil
+        self.authorizationObserve = nil
+        self.scanEnabledObserve = nil
+        self.scanResultsObserve = nil
+        self.devicesObserve = nil
+        self.deviceConnectionStatusObserve = nil
+        self.deviceServicesObserve = nil
+        self.deviceMTUObserve = nil
+        self.deviceCharacteristicDataObserve = nil
+        self.deviceCharacteristicNotifyEnabledObserve = nil
     }
 
     // MARK: - State
