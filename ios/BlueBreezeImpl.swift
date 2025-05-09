@@ -15,19 +15,173 @@ struct BlueBreezeError : Error {
 
 @objc public class BlueBreezeImpl: NSObject {
     var disposeBag: Set<AnyCancellable> = []
+    var disposeBagDevices: [UUID: Set<AnyCancellable>] = [:]
+    var disposeBagServices: [UUID: [BBUUID: [BBUUID: Set<AnyCancellable>]]] = [:]
+
     let manager = BBManager()
+    
+    var stateObserve: ((String) -> Void)?
+    var authorizationObserve: ((String) -> Void)?
+    var scanResultsObserve: (([String: Any]) -> Void)?
+    var scanEnabledObserve: ((Bool) -> Void)?
+    var devicesObserve: (([[String: Any]]) -> Void)?
+    var deviceConnectionStatusObserve: ((String, String) -> Void)?
+    var deviceServicesObserve: ((String, [[String: Any]]) -> Void)?
+    var deviceMTUObserve: ((String, Int) -> Void)?
+    var deviceCharacteristicDataObserve: ((String, String, String, Array<UInt8>) -> Void)?
+    var deviceCharacteristicNotifyEnabledObserve: ((String, String, String, Bool) -> Void)?
+    
+    @objc public func subscribe(
+        stateObserve: (@escaping (String) -> Void),
+        authorizationObserve: (@escaping (String) -> Void),
+        scanEnabledObserve: (@escaping (Bool) -> Void),
+        scanResultsObserve: (@escaping ([String: Any]) -> Void),
+        devicesObserve: (@escaping ([[String: Any]]) -> Void),
+        deviceConnectionStatusObserve: (@escaping (String, String) -> Void),
+        deviceServicesObserve: (@escaping (String, [[String: Any]]) -> Void),
+        deviceMTUObserve: (@escaping (String, Int) -> Void),
+        deviceCharacteristicDataObserve: (@escaping (String, String, String, Array<UInt8>) -> Void),
+        deviceCharacteristicNotifyEnabledObserve: (@escaping (String, String, String, Bool) -> Void)
+    ) {
+        self.stateObserve = stateObserve
+        self.authorizationObserve = authorizationObserve
+        self.scanEnabledObserve = scanEnabledObserve
+        self.scanResultsObserve = scanResultsObserve
+        self.devicesObserve = devicesObserve
+        self.deviceConnectionStatusObserve = deviceConnectionStatusObserve
+        self.deviceServicesObserve = deviceServicesObserve
+        self.deviceMTUObserve = deviceMTUObserve
+        self.deviceCharacteristicDataObserve = deviceCharacteristicDataObserve
+        self.deviceCharacteristicNotifyEnabledObserve = deviceCharacteristicNotifyEnabledObserve
+
+        manager.state
+            .receive(on: DispatchQueue.main)
+            .sink { self.stateObserve?($0.toJs) }
+            .store(in: &disposeBag)
+        
+        manager.authorizationStatus
+            .receive(on: DispatchQueue.main)
+            .sink { self.authorizationObserve?($0.toJs) }
+            .store(in: &disposeBag)
+        
+        manager.scanEnabled
+            .receive(on: DispatchQueue.main)
+            .sink { self.scanEnabledObserve?($0) }
+            .store(in: &disposeBag)
+        
+        manager.scanResults
+            .receive(on: DispatchQueue.main)
+            .sink { self.scanResultsObserve?($0.toJs) }
+            .store(in: &disposeBag)
+        
+        manager.devices
+            .receive(on: DispatchQueue.main)
+            .sink {
+                $0.forEach { (id, device) in
+                    self.subscribeDevice(device)
+                }
+                self.devicesObserve?($0.values.map { $0.toJs })
+            }
+            .store(in: &disposeBag)
+    }
+    
+    private func subscribeDevice(_ device: BBDevice) {
+        guard disposeBagDevices[device.id] == nil else {
+            return
+        }
+
+        disposeBagDevices[device.id] = []
+
+        device.connectionStatus
+            .receive(on: DispatchQueue.main)
+            .sink { self.deviceConnectionStatusObserve?(device.id.toJs, $0.toJs) }
+            .store(in: &disposeBagDevices[device.id]!)
+
+        device.services
+            .receive(on: DispatchQueue.main)
+            .sink {
+                self.subscribeServices(device, $0)
+                self.deviceServicesObserve?(device.id.toJs, $0.toJs)
+            }
+            .store(in: &disposeBagDevices[device.id]!)
+
+        device.mtu
+            .receive(on: DispatchQueue.main)
+            .sink { self.deviceMTUObserve?(device.id.toJs, $0) }
+            .store(in: &disposeBagDevices[device.id]!)
+    }
+
+    private func subscribeServices(_ device: BBDevice, _ services: [BBUUID: [BBCharacteristic]]) {
+        // Clean up device data by removing missing services
+        disposeBagServices[device.id] =
+            disposeBagServices[device.id]?.filter({ key, value in
+                services[key] != nil
+            }) ?? [:]
+
+        // Init all existing services
+        services.forEach { serviceId, value in
+            // Clean up service data by removing missing characteristics
+            disposeBagServices[device.id]![serviceId] =
+                disposeBagServices[device.id]![serviceId]?.filter({ key, _ in
+                    value.first(where: { $0.id == key }) != nil
+                }) ?? [:]
+
+            // Init all existing characteristics
+            value.forEach { characteristic in
+                guard disposeBagServices[device.id]![serviceId]![characteristic.id] == nil else {
+                    return
+                }
+
+                disposeBagServices[device.id]![serviceId]![characteristic.id] = []
+
+                characteristic.isNotifying
+                    .receive(on: DispatchQueue.main)
+                    .sink {
+                        self.deviceCharacteristicNotifyEnabledObserve?(
+                            device.id.toJs,
+                            serviceId.toJs,
+                            characteristic.id.toJs,
+                            $0
+                        )
+                    }
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+
+                characteristic.data
+                    .receive(on: DispatchQueue.main)
+                    .sink {
+                        self.deviceCharacteristicDataObserve?(
+                            device.id.toJs,
+                            serviceId.toJs,
+                            characteristic.id.toJs,
+                            $0.toJs
+                        )
+                    }
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+            }
+        }
+    }
+    
+    @objc public func unsubscribe() {
+        disposeBagServices = [:]
+        disposeBagDevices = [:]
+        disposeBag = []
+
+        self.stateObserve = nil
+        self.authorizationObserve = nil
+        self.scanEnabledObserve = nil
+        self.scanResultsObserve = nil
+        self.devicesObserve = nil
+        self.deviceConnectionStatusObserve = nil
+        self.deviceServicesObserve = nil
+        self.deviceMTUObserve = nil
+        self.deviceCharacteristicDataObserve = nil
+        self.deviceCharacteristicNotifyEnabledObserve = nil
+    }
 
     // MARK: - State
 
     @objc public func state() -> String {
         return manager.state.value.toJs
-    }
-
-    @objc public func stateObserve(onChanged: @escaping (String) -> Void) {
-        manager.state
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.toJs) }
-            .store(in: &disposeBag)
     }
 
     // MARK: - Authorization
@@ -36,13 +190,6 @@ struct BlueBreezeError : Error {
         return manager.authorizationStatus.value.toJs
     }
 
-    @objc public func authorizationStatusObserve(onChanged: @escaping (String) -> Void) {
-        manager.authorizationStatus
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.toJs) }
-            .store(in: &disposeBag)
-    }
-    
     @objc public func authorizationRequest() {
         manager.authorizationRequest()
     }
@@ -55,20 +202,6 @@ struct BlueBreezeError : Error {
 
     @objc public func scanEnabled() -> Bool {
         return manager.scanEnabled.value
-    }
-    
-    @objc public func scanResultsObserve(onChanged: @escaping ([String: Any]) -> Void) {
-        return manager.scanResults
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.toJs) }
-            .store(in: &disposeBag)
-    }
-
-    @objc public func scanEnabledObserve(onChanged: @escaping (Bool) -> Void) {
-        return manager.scanEnabled
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0) }
-            .store(in: &disposeBag)
     }
 
     @objc public func scanStart(_ ids: [String]?) {
@@ -86,13 +219,6 @@ struct BlueBreezeError : Error {
         return manager.devices.value.values.map { $0.toJs }
     }
 
-    @objc public func devicesObserve(onChanged: @escaping ([[String: Any]]) -> Void) {
-        return manager.devices
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.values.map { $0.toJs }) }
-            .store(in: &disposeBag)
-    }
-    
     // MARK: - Device services
     
     @objc public func deviceServices(id: String) -> [[String: Any]] {
@@ -105,21 +231,6 @@ struct BlueBreezeError : Error {
         }
         
         return device.services.value.toJs
-    }
-    
-    @objc public func deviceServicesObserve(id: String, onChanged: @escaping ([[String: Any]]) -> Void) {
-        guard let uuid = UUID(uuidString: id) else {
-            return
-        }
-        
-        guard let device = manager.devices.value[uuid] else {
-            return
-        }
-        
-        return device.services
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.toJs) }
-            .store(in: &disposeBag)
     }
     
     // MARK: - Device connection status
@@ -136,21 +247,6 @@ struct BlueBreezeError : Error {
         return device.connectionStatus.value.toJs
     }
     
-    @objc public func deviceConnectionStatusObserve(id: String, onChanged: @escaping (String) -> Void) {
-        guard let uuid = UUID(uuidString: id) else {
-            return
-        }
-        
-        guard let device = manager.devices.value[uuid] else {
-            return
-        }
-        
-        return device.connectionStatus
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.toJs) }
-            .store(in: &disposeBag)
-    }
-    
     // MARK: - Device MTU
     
     @objc public func deviceMTU(id: String) -> Int {
@@ -165,21 +261,6 @@ struct BlueBreezeError : Error {
         return device.mtu.value
     }
     
-    @objc public func deviceMTUObserve(id: String, onChanged: @escaping (Int) -> Void) {
-        guard let uuid = UUID(uuidString: id) else {
-            return
-        }
-        
-        guard let device = manager.devices.value[uuid] else {
-            return
-        }
-        
-        return device.mtu
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0) }
-            .store(in: &disposeBag)
-    }
-
     // MARK: - Device operations
     
     @objc public func deviceConnect(id: String) async throws {
@@ -245,26 +326,7 @@ struct BlueBreezeError : Error {
             return []
         }
 
-        return characteristic.data.value.export
-    }
-    
-    @objc public func deviceCharacteristicDataObserve(id: String, serviceId: String, characteristicId: String, onChanged: @escaping (Array<UInt8>) -> Void) {
-        guard let uuid = UUID(uuidString: id) else {
-            return
-        }
-        
-        guard let device = manager.devices.value[uuid] else {
-            return
-        }
-        
-        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
-            return
-        }
-        
-        return characteristic.data
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0.export) }
-            .store(in: &disposeBag)
+        return characteristic.data.value.toJs
     }
     
     // MARK: - Device notify enabled
@@ -285,25 +347,6 @@ struct BlueBreezeError : Error {
         return characteristic.isNotifying.value
     }
     
-    @objc public func deviceCharacteristicNotifyEnabledObserve(id: String, serviceId: String, characteristicId: String, onChanged: @escaping (Bool) -> Void) {
-        guard let uuid = UUID(uuidString: id) else {
-            return
-        }
-        
-        guard let device = manager.devices.value[uuid] else {
-            return
-        }
-        
-        guard let characteristic = device.getCharacteristic(serviceId: serviceId, characteristicId: characteristicId) else {
-            return
-        }
-        
-        return characteristic.isNotifying
-            .receive(on: DispatchQueue.main)
-            .sink { onChanged($0) }
-            .store(in: &disposeBag)
-    }
-
     // MARK: - Device operations
     
     @objc public func deviceCharacteristicRead(id: String, serviceId: String, characteristicId: String) async throws -> Array<UInt8> {
@@ -320,7 +363,7 @@ struct BlueBreezeError : Error {
         }
         
         let data = try await characteristic.read()
-        return data?.export ?? []
+        return data?.toJs ?? []
     }
     
     @objc public func deviceCharacteristicWrite(id: String, serviceId: String, characteristicId: String, data: Array<UInt8>, withResponse: Bool) async throws {
@@ -384,6 +427,18 @@ extension BBDevice {
 
 // MARK: - Exporters
 
+extension UUID {
+    var toJs: String {
+        return uuidString
+    }
+}
+
+extension BBUUID {
+    var toJs: String {
+        return uuidString
+    }
+}
+
 extension BBAuthorization {
     var toJs: String {
         switch self {
@@ -428,7 +483,7 @@ extension BBScanResult {
             "advertisedServices": advertisedServices.map(\.uuidString),
             "manufacturerId": manufacturerId as Any,
             "manufacturerName": manufacturerName as Any,
-            "manufacturerData": manufacturerData?.export as Any,
+            "manufacturerData": manufacturerData?.toJs as Any,
         ]
     }
 }
@@ -480,7 +535,7 @@ extension [BBUUID: [BBCharacteristic]] {
 }
 
 extension Data {
-    var export: Array<UInt8> {
+    var toJs: Array<UInt8> {
         map { $0 }
     }
 }
