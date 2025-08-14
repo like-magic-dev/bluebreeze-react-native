@@ -1,5 +1,5 @@
 import BlueBreeze from "react-native-bluebreeze"
-import type { StateEventEmitter } from "./emitters"
+import type { StateValueEmitter } from "react-native-value-emitter"
 
 export class BBCharacteristic {
     constructor(
@@ -27,10 +27,10 @@ export class BBCharacteristic {
     properties: string[]
 
     // Data
-    data: StateEventEmitter<number[]>
+    data: StateValueEmitter<number[]>
 
     // Notifying
-    notifyEnabled: StateEventEmitter<boolean>
+    notifyEnabled: StateValueEmitter<boolean>
 
     // Operations
     read: () => Promise<number[]>

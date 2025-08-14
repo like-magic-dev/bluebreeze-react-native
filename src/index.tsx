@@ -1,16 +1,16 @@
+import { StateValueEmitter, ValueEmitter } from 'react-native-value-emitter'
 import type { BBAuthorization } from './implementation/bluebreeze_authorization'
 import { BBCharacteristic } from './implementation/bluebreeze_characteristic'
 import { BBDevice } from './implementation/bluebreeze_device'
 import { BBScanResult } from './implementation/bluebreeze_scan_result'
 import { BBService } from './implementation/bluebreeze_service'
 import type { BBState } from './implementation/bluebreeze_state'
-import { EventEmitter, StateEventEmitter } from './implementation/emitters'
 import NativeBlueBreeze, { type SpecDevice, type SpecDeviceCharacteristic, type SpecDeviceService, type SpecScanResult } from './NativeBlueBreeze'
 
 
 // State
 
-const state = new StateEventEmitter<BBState>(NativeBlueBreeze.state() as BBState)
+const state = new StateValueEmitter<BBState>(NativeBlueBreeze.state() as BBState)
 
 NativeBlueBreeze.stateEmitter((value) => {
     state.add(value as BBState)
@@ -18,7 +18,7 @@ NativeBlueBreeze.stateEmitter((value) => {
 
 // Authorization to use BLE
 
-const authorizationStatus = new StateEventEmitter<BBAuthorization>(NativeBlueBreeze.authorizationStatus() as BBAuthorization)
+const authorizationStatus = new StateValueEmitter<BBAuthorization>(NativeBlueBreeze.authorizationStatus() as BBAuthorization)
 
 NativeBlueBreeze.authorizationStatusEmitter((value) => {
     authorizationStatus.add(value as BBAuthorization)
@@ -30,13 +30,13 @@ const authorizationOpenSettings = NativeBlueBreeze.authorizationOpenSettings
 
 // Scanning
 
-const scanEnabled = new StateEventEmitter<boolean>(NativeBlueBreeze.scanEnabled())
+const scanEnabled = new StateValueEmitter<boolean>(NativeBlueBreeze.scanEnabled())
 
 NativeBlueBreeze.scanEnabledEmitter((value) => {
     scanEnabled.add(value)
 })
 
-const scanResults = new EventEmitter<BBScanResult>()
+const scanResults = new ValueEmitter<BBScanResult>()
 
 NativeBlueBreeze.scanResultEmitter((value) => {
     const device = devices.value?.get(value.id)
@@ -53,7 +53,7 @@ const scanStop = NativeBlueBreeze.scanStop
 
 // Device
 
-const devices = new StateEventEmitter<Map<string, BBDevice>>(
+const devices = new StateValueEmitter<Map<string, BBDevice>>(
     new Map(
         NativeBlueBreeze.devices().map((d) => [
             d.id,
@@ -75,13 +75,13 @@ NativeBlueBreeze.devicesEmitter((value) => {
 
 // Device services
 
-const _deviceServices = new Map<string, StateEventEmitter<BBService[]>>()
+const _deviceServices = new Map<string, StateValueEmitter<BBService[]>>()
 
-const deviceServices = (id: string): StateEventEmitter<BBService[]> => {
+const deviceServices = (id: string): StateValueEmitter<BBService[]> => {
     return mapGetOrSet(
         _deviceServices,
         id,
-        () => new StateEventEmitter<BBService[]>(
+        () => new StateValueEmitter<BBService[]>(
             NativeBlueBreeze.deviceServices(id).map(
                 (s) => convertDeviceService(id, s)
             )
@@ -97,13 +97,13 @@ NativeBlueBreeze.deviceServicesEmitter((value) => {
 
 // Device connection status
 
-const _deviceConnectionStatus = new Map<string, StateEventEmitter<string>>()
+const _deviceConnectionStatus = new Map<string, StateValueEmitter<string>>()
 
-const deviceConnectionStatus = (id: string): StateEventEmitter<string> => {
+const deviceConnectionStatus = (id: string): StateValueEmitter<string> => {
     return mapGetOrSet(
         _deviceConnectionStatus,
         id,
-        () => new StateEventEmitter<string>(
+        () => new StateValueEmitter<string>(
             NativeBlueBreeze.deviceConnectionStatus(id)
         )
     )
@@ -115,13 +115,13 @@ NativeBlueBreeze.deviceConnectionStatusEmitter((value) => {
 
 // Device MTU
 
-const _deviceMTU = new Map<string, StateEventEmitter<number>>()
+const _deviceMTU = new Map<string, StateValueEmitter<number>>()
 
-const deviceMTU = (id: string): StateEventEmitter<number> => {
+const deviceMTU = (id: string): StateValueEmitter<number> => {
     return mapGetOrSet(
         _deviceMTU,
         id,
-        () => new StateEventEmitter<number>(
+        () => new StateValueEmitter<number>(
             NativeBlueBreeze.deviceMTU(id)
         )
     )
@@ -143,29 +143,29 @@ const deviceRequestMTU = NativeBlueBreeze.deviceRequestMTU
 
 // Device characteristic notify enabled
 
-const _deviceCharacteristicNotifyEnabled = new Map<string, Map<string, Map<string, StateEventEmitter<boolean>>>>()
+const _deviceCharacteristicNotifyEnabled = new Map<string, Map<string, Map<string, StateValueEmitter<boolean>>>>()
 
 const deviceCharacteristicNotifyEnabled = (
     id: string,
     serviceId: string,
     characteristicId: string
-): StateEventEmitter<boolean> => {
+): StateValueEmitter<boolean> => {
     const deviceMap = mapGetOrSet(
         _deviceCharacteristicNotifyEnabled,
         id,
-        () => new Map<string, Map<string, StateEventEmitter<boolean>>>()
+        () => new Map<string, Map<string, StateValueEmitter<boolean>>>()
     )
 
     const serviceMap = mapGetOrSet(
         deviceMap,
         serviceId,
-        () => new Map<string, StateEventEmitter<boolean>>()
+        () => new Map<string, StateValueEmitter<boolean>>()
     )
 
     return mapGetOrSet(
         serviceMap,
         characteristicId,
-        () => new StateEventEmitter<boolean>(
+        () => new StateValueEmitter<boolean>(
             NativeBlueBreeze.deviceCharacteristicNotifyEnabled(id, serviceId, characteristicId)
         )
     )
@@ -177,29 +177,29 @@ NativeBlueBreeze.deviceCharacteristicNotifyEnabledEmitter((value) => {
 
 // Device characteristic data
 
-const _deviceCharacteristicData = new Map<string, Map<string, Map<string, StateEventEmitter<number[]>>>>()
+const _deviceCharacteristicData = new Map<string, Map<string, Map<string, StateValueEmitter<number[]>>>>()
 
 const deviceCharacteristicData = (
     id: string,
     serviceId: string,
     characteristicId: string
-): StateEventEmitter<number[]> => {
+): StateValueEmitter<number[]> => {
     const deviceMap = mapGetOrSet(
         _deviceCharacteristicData,
         id,
-        () => new Map<string, Map<string, StateEventEmitter<number[]>>>()
+        () => new Map<string, Map<string, StateValueEmitter<number[]>>>()
     )
 
     const serviceMap = mapGetOrSet(
         deviceMap,
         serviceId,
-        () => new Map<string, StateEventEmitter<number[]>>()
+        () => new Map<string, StateValueEmitter<number[]>>()
     )
 
     return mapGetOrSet(
         serviceMap,
         characteristicId,
-        () => new StateEventEmitter<number[]>(
+        () => new StateValueEmitter<number[]>(
             NativeBlueBreeze.deviceCharacteristicData(id, serviceId, characteristicId)
         )
     )
@@ -309,9 +309,11 @@ export default {
 }
 
 export {
-    BBCharacteristic, BBDevice,
+    BBCharacteristic,
+    BBDevice,
     BBScanResult,
-    BBService, EventEmitter,
-    StateEventEmitter, type BBAuthorization, type BBState
+    BBService,
+    type BBAuthorization,
+    type BBState
 }
 
