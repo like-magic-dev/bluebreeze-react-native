@@ -10636,6 +10636,7 @@ __metadata:
     react: 18.3.1
     react-native: 0.77.1
     react-native-builder-bob: ^0.37.0
+    react-native-value-emitter: ^1.0.0
     release-it: ^18.1.2
     turbo: ^2.4.2
     typescript: ^5.7.3
@@ -10721,6 +10722,16 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 9bb769165954e3be8aea76a4ee85d3dacd45358df994eed0b1979235d37c16d0900186c7f358e25f9dffad454c578ada44620b2828416fd7fe98a78a2eef562e
+  languageName: node
+  linkType: hard
+
+"react-native-value-emitter@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "react-native-value-emitter@npm:1.0.0"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 4ec02677866e36ad0b1cbebd8435dd21b4627a80d333ce3436e4dc0fc98cf9fae2f75aaef693fd328d3a5610f09a7db734415d3538125b223dba3a37f1ec5b48
   languageName: node
   linkType: hard
 

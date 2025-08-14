@@ -1,6 +1,6 @@
 import BlueBreeze from "react-native-bluebreeze"
+import type { StateValueEmitter } from "react-native-value-emitter"
 import type { BBService } from "./bluebreeze_service"
-import { StateEventEmitter } from "./emitters"
 
 export class BBDevice {
     constructor(
@@ -24,13 +24,13 @@ export class BBDevice {
     name?: string
 
     // Services
-    services: StateEventEmitter<BBService[]>
+    services: StateValueEmitter<BBService[]>
 
     // Connection status
-    connectionStatus: StateEventEmitter<string>
+    connectionStatus: StateValueEmitter<string>
 
     // MTU
-    mtu: StateEventEmitter<number>
+    mtu: StateValueEmitter<number>
 
     // Operations
     connect: () => Promise<void>
