@@ -398,7 +398,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
         val writeValue = ByteArray(data?.size() ?: 0)
         data?.toArrayList()?.forEachIndexed { index, v ->
-            writeValue[index] = (v as Int).toByte()
+            writeValue[index] = (v as Number).toInt().toByte()
         }
 
         async {
@@ -569,7 +569,7 @@ val BBService.toJs: WritableMap
 val ByteArray.toJs: WritableArray
     get() {
         val result = Arguments.createArray()
-        forEach { result.pushInt(it.toInt()) }
+        forEach { result.pushInt(it.toInt() and 0xFF) }
         return result
     }
 
