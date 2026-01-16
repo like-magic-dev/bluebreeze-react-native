@@ -1211,7 +1211,7 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
-  - react-native-bluebreeze (0.0.10):
+  - react-native-bluebreeze (0.0.11):
     - BlueBreeze (~> 0.0.14)
     - DoubleConversion
     - glog
