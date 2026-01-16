@@ -1211,7 +1211,7 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
-  - react-native-bluebreeze (0.0.9):
+  - react-native-bluebreeze (0.0.10):
     - BlueBreeze (~> 0.0.14)
     - DoubleConversion
     - glog
@@ -1917,7 +1917,7 @@ SPEC CHECKSUMS:
   React-logger: 1935d6e6461e9c8be4c87af56c56a4876021171e
   React-Mapbuffer: 212171f037e3b22e6c2df839aa826806da480b85
   React-microtasksnativemodule: 72564d5469003687d39bfc4efad281df8efc0684
-  react-native-bluebreeze: e87c93510bfa3c216325f06e98cb80fe2fa6ac2b
+  react-native-bluebreeze: 5efe30fa946f47be0a0803c1e25ad9956d649ca5
   react-native-safe-area-context: 9c33120e9eac7741a5364cc2d9f74665049b76b3
   React-nativeconfig: cb207ebba7cafce30657c7ad9f1587a8f32e4564
   React-NativeModulesApple: 82a8bee52df9f5b378195a500f22be3a6ef0f890
