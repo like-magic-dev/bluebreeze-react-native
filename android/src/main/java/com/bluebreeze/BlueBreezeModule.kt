@@ -569,7 +569,7 @@ val BBService.toJs: WritableMap
 val ByteArray.toJs: WritableArray
     get() {
         val result = Arguments.createArray()
-        forEach { result.pushInt(it.toInt()) }
+        forEach { result.pushInt(it.toInt() and 0xFF) }
         return result
     }
 
