@@ -1,1 +1,1 @@
-export type BBAuthorization = 'unknown' | 'showRationale' | 'restricted' | 'denied' | 'authorized'
+export type BBAuthorization = 'unknown' | 'showRationale' | 'denied' | 'authorized'
