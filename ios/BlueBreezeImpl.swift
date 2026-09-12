@@ -111,23 +111,25 @@ struct BlueBreezeError : Error {
             .store(in: &disposeBagDevices[device.id]!)
     }
 
-    private func subscribeServices(_ device: BBDevice, _ services: [BBUUID: [BBCharacteristic]]) {
+    private func subscribeServices(_ device: BBDevice, _ services: [BBService]) {
         // Clean up device data by removing missing services
         disposeBagServices[device.id] =
             disposeBagServices[device.id]?.filter({ key, value in
-                services[key] != nil
+                services.contains(where: { $0.uuid == key })
             }) ?? [:]
 
         // Init all existing services
-        services.forEach { serviceId, value in
+        services.forEach { service in
+            let serviceId = service.uuid
+
             // Clean up service data by removing missing characteristics
             disposeBagServices[device.id]![serviceId] =
                 disposeBagServices[device.id]![serviceId]?.filter({ key, _ in
-                    value.first(where: { $0.id == key }) != nil
+                    service.characteristics.first(where: { $0.id == key }) != nil
                 }) ?? [:]
 
             // Init all existing characteristics
-            value.forEach { characteristic in
+            service.characteristics.forEach { characteristic in
                 guard disposeBagServices[device.id]![serviceId]![characteristic.id] == nil else {
                     return
                 }
@@ -419,8 +421,8 @@ struct BlueBreezeError : Error {
 
 extension BBDevice {
     func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
-        let service = services.value.first { $0.key == BBUUID(string: serviceId)}
-        let characteristic = service?.value.first { $0.id == BBUUID(string: characteristicId) }
+        let service = services.value.first { $0.uuid == BBUUID(string: serviceId) }
+        let characteristic = service?.characteristics.first { $0.id == BBUUID(string: characteristicId) }
         return characteristic
     }
 }
@@ -522,13 +524,13 @@ extension [BBCharacteristic] {
     }
 }
 
-extension [BBUUID: [BBCharacteristic]] {
+extension [BBService] {
     var toJs: [[String: Any]] {
         map {
             [
-                "id": $0.key.uuidString,
-                "name": BBConstants.knownServices[$0.key] as Any,
-                "characteristics": $0.value.toJs
+                "id": $0.uuid.uuidString,
+                "name": BBConstants.knownServices[$0.uuid] as Any,
+                "characteristics": $0.characteristics.toJs
             ]
         }
     }
