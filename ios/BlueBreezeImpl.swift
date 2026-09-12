@@ -155,7 +155,7 @@ struct BlueBreezeError : Error {
                             device.id.toJs,
                             serviceId.toJs,
                             characteristic.uuid.toJs,
-                            $0.toJs
+                            $0?.toJs ?? []
                         )
                     }
                     .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
@@ -330,7 +330,7 @@ struct BlueBreezeError : Error {
             return []
         }
 
-        return characteristic.data.value.toJs
+        return characteristic.data.value?.toJs ?? []
     }
     
     // MARK: - Device notify enabled
