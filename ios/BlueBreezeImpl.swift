@@ -309,8 +309,10 @@ struct BlueBreezeError : Error {
         guard let device = manager.devices.value[uuid] else {
             throw BlueBreezeError(description: "Device not found")
         }
-        
-        try await device.requestMTU(mtu)
+
+        // CoreBluetooth has no API to request a specific MTU value. negotiateMTU() only reads
+        // back whatever value it auto-negotiated on connect, so `mtu` is ignored on iOS.
+        try await device.negotiateMTU()
     }
     
     // MARK: - Device characteristic data
