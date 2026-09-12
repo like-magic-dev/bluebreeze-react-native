@@ -3,11 +3,6 @@
 
 @implementation BlueBreeze {
     BlueBreezeImpl* impl;
-    NSMutableArray<NSString*>* trackedDeviceServices;
-    NSMutableArray<NSString*>* trackedDeviceConnectionStatus;
-    NSMutableArray<NSString*>* trackedDeviceMTU;
-    NSMutableArray<NSString*>* trackedDeviceCharacteristicData;
-    NSMutableArray<NSString*>* trackedDeviceCharacteristicNotifyEnabled;
 }
 
 - (instancetype) init {
