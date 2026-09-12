@@ -199,11 +199,11 @@ RCT_EXPORT_MODULE()
 }
 
 - (void)deviceRequestMTU:(NSString *)id mtu:(double)mtu resolve:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject {
-    [impl deviceRequestMTUWithId:id mtu:mtu completionHandler:^(NSError * _Nullable error) {
+    [impl deviceRequestMTUWithId:id mtu:mtu completionHandler:^(NSInteger value, NSError * _Nullable error) {
         if (error != nil) {
             reject([@([error code]) stringValue], [error description], error);
         } else {
-            resolve(nil);
+            resolve(@(value));
         }
     }];
 }

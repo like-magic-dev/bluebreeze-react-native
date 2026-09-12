@@ -301,7 +301,7 @@ struct BlueBreezeError : Error {
         try await device.discoverServices()
     }
     
-    @objc public func deviceRequestMTU(id: String, mtu: Int) async throws {
+    @objc public func deviceRequestMTU(id: String, mtu: Int) async throws -> Int {
         guard let uuid = UUID(uuidString: id) else {
             throw BlueBreezeError(description: "Invalid UUID")
         }
@@ -313,6 +313,8 @@ struct BlueBreezeError : Error {
         // CoreBluetooth has no API to request a specific MTU value. negotiateMTU() only reads
         // back whatever value it auto-negotiated on connect, so `mtu` is ignored on iOS.
         try await device.negotiateMTU()
+
+        return device.mtu.value
     }
     
     // MARK: - Device characteristic data
