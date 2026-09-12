@@ -125,16 +125,16 @@ struct BlueBreezeError : Error {
             // Clean up service data by removing missing characteristics
             disposeBagServices[device.id]![serviceId] =
                 disposeBagServices[device.id]![serviceId]?.filter({ key, _ in
-                    service.characteristics.first(where: { $0.id == key }) != nil
+                    service.characteristics.first(where: { $0.uuid == key }) != nil
                 }) ?? [:]
 
             // Init all existing characteristics
             service.characteristics.forEach { characteristic in
-                guard disposeBagServices[device.id]![serviceId]![characteristic.id] == nil else {
+                guard disposeBagServices[device.id]![serviceId]![characteristic.uuid] == nil else {
                     return
                 }
 
-                disposeBagServices[device.id]![serviceId]![characteristic.id] = []
+                disposeBagServices[device.id]![serviceId]![characteristic.uuid] = []
 
                 characteristic.isNotifying
                     .receive(on: DispatchQueue.main)
@@ -142,11 +142,11 @@ struct BlueBreezeError : Error {
                         self.deviceCharacteristicNotifyEnabledObserve?(
                             device.id.toJs,
                             serviceId.toJs,
-                            characteristic.id.toJs,
+                            characteristic.uuid.toJs,
                             $0
                         )
                     }
-                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
 
                 characteristic.data
                     .receive(on: DispatchQueue.main)
@@ -154,11 +154,11 @@ struct BlueBreezeError : Error {
                         self.deviceCharacteristicDataObserve?(
                             device.id.toJs,
                             serviceId.toJs,
-                            characteristic.id.toJs,
+                            characteristic.uuid.toJs,
                             $0.toJs
                         )
                     }
-                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
             }
         }
     }
@@ -422,7 +422,7 @@ struct BlueBreezeError : Error {
 extension BBDevice {
     func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
         let service = services.value.first { $0.uuid == BBUUID(string: serviceId) }
-        let characteristic = service?.characteristics.first { $0.id == BBUUID(string: characteristicId) }
+        let characteristic = service?.characteristics.first { $0.uuid == BBUUID(string: characteristicId) }
         return characteristic
     }
 }
@@ -511,8 +511,8 @@ extension BBDeviceConnectionStatus {
 extension BBCharacteristic {
     var toJs: [String: Any] {
         [
-            "id": id.uuidString,
-            "name": BBConstants.knownCharacteristics[id] as Any,
+            "id": uuid.uuidString,
+            "name": BBAssignedNumbers.characteristicUUIDs[uuid] as Any,
             "properties": properties.map { $0.toJs }
         ]
     }
@@ -529,7 +529,7 @@ extension [BBService] {
         map {
             [
                 "id": $0.uuid.uuidString,
-                "name": BBConstants.knownServices[$0.uuid] as Any,
+                "name": BBAssignedNumbers.serviceUUIDs[$0.uuid] as Any,
                 "characteristics": $0.characteristics.toJs
             ]
         }
