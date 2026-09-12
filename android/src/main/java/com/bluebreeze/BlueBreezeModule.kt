@@ -21,6 +21,8 @@ import dev.likemagic.bluebreeze.BBUUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -28,7 +30,6 @@ import kotlinx.coroutines.launch
 @ReactModule(name = BlueBreezeModule.NAME)
 class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreezeSpec(reactContext) {
     val manager = BBManager(reactContext)
-    val jobs: MutableList<Job> = mutableListOf()
 
     val context: Context
         get() = getCurrentActivity() ?: reactApplicationContext
@@ -50,7 +51,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             safeEmit {
                 emitStateEmitter(it.name)
             }
-        }.storeIn(jobs)
+        }
 
         // Authorization
 
@@ -58,7 +59,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             safeEmit {
                 emitAuthorizationStatusEmitter(it.toJs)
             }
-        }.storeIn(jobs)
+        }
 
         // Scanning
 
@@ -66,13 +67,13 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             safeEmit {
                 emitScanEnabledEmitter(it)
             }
-        }.storeIn(jobs)
+        }
 
         manager.scanResults.collectAsync {
             safeEmit {
                 emitScanResultEmitter(it.toJs)
             }
-        }.storeIn(jobs)
+        }
 
         // Devices
 
@@ -178,9 +179,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
     override fun invalidate() {
         super.invalidate()
-
-        jobs.forEach { it.cancel() }
-        jobs.clear()
+        moduleScope.cancel()
     }
 
     // State
@@ -246,7 +245,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceDisconnect(id: String?, promise: Promise?) {
@@ -262,7 +261,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceDiscoverServices(id: String?, promise: Promise?) {
@@ -278,7 +277,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceRequestMTU(id: String?, mtu: Double, promise: Promise?) {
@@ -294,7 +293,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     // Device characteristic data
@@ -366,7 +365,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceCharacteristicWrite(
@@ -411,7 +410,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceCharacteristicSubscribe(
@@ -446,7 +445,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     override fun deviceCharacteristicUnsubscribe(
@@ -481,7 +480,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             } catch (e: Throwable) {
                 promise?.reject(e)
             }
-        }.storeIn(jobs)
+        }
     }
 
     // Helper for safely emitting data
@@ -491,6 +490,19 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             block()
         }
     }
+
+    // Functions to collect data asynchronously, all launched on moduleScope so invalidate()
+    // can reliably cancel every collector
+
+    private val moduleScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private fun async(
+        block: suspend CoroutineScope.() -> Unit,
+    ): Job = moduleScope.launch(block = block)
+
+    private fun <T> SharedFlow<T>.collectAsync(
+        collector: FlowCollector<T>,
+    ): Job = moduleScope.launch { collect(collector) }
 
     // Module name
 
@@ -575,23 +587,6 @@ val ByteArray.toJs: WritableArray
 
 val BBUUID.toJs: String
     get() = toString()
-
-/// Functions to collect data asynchronously
-
-fun Job.storeIn(list: MutableList<Job>) = list.add(this)
-
-fun async(
-    block: suspend CoroutineScope.() -> Unit,
-): Job = CoroutineScope(Dispatchers.IO).launch(block = block)
-
-fun <T> SharedFlow<T>.collectAsync(
-    collector: FlowCollector<T>,
-): Job {
-    return CoroutineScope(Dispatchers.IO)
-        .launch {
-            collect(collector)
-        }
-}
 
 /// Functions to handle React Native types
 
