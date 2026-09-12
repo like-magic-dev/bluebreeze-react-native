@@ -39,9 +39,13 @@ NativeBlueBreeze.scanEnabledEmitter((value) => {
 const scanResults = new ValueEmitter<BBScanResult>()
 
 NativeBlueBreeze.scanResultEmitter((value) => {
-    const device = devices.value?.get(value.id)
+    let device = devices.value?.get(value.id)
+
+    // The native "device discovered" and "scan result" events are emitted independently.
+    // We register a new device locally rather than dropping the result.
     if (device == undefined) {
-        return
+        device = convertDevice(value)
+        devices.add(new Map(devices.value).set(value.id, device))
     }
 
     scanResults.add(convertScanResult(device, value))
