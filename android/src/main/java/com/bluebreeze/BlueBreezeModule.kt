@@ -31,7 +31,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
     val jobs: MutableList<Job> = mutableListOf()
 
     val context: Context
-        get() = currentActivity ?: reactApplicationContext
+        get() = getCurrentActivity() ?: reactApplicationContext
 
     private val trackedDeviceServices = mutableSetOf<String>()
     private val trackedDeviceConnectionStatus = mutableSetOf<String>()
