@@ -1,7 +1,7 @@
 
 #import <React/RCTInitializing.h>
 #import <React/RCTInvalidating.h>
-#import "generated/RNBlueBreezeSpec/RNBlueBreezeSpec.h"
+#import "generated/ReactCodegen/RNBlueBreezeSpec/RNBlueBreezeSpec.h"
 
 @interface BlueBreeze : NativeBlueBreezeSpecBase <NativeBlueBreezeSpec, RCTInitializing, RCTInvalidating>
 
