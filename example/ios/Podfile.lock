@@ -1,5 +1,5 @@
 PODS:
-  - BlueBreeze (0.0.16)
+  - BlueBreeze (1.0.0)
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
   - fast_float (6.1.4)
@@ -1211,8 +1211,8 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
-  - react-native-bluebreeze (0.0.11):
-    - BlueBreeze (~> 0.0.16)
+  - react-native-bluebreeze (0.0.12):
+    - BlueBreeze (= 1.0.0)
     - DoubleConversion
     - glog
     - hermes-engine
@@ -1880,7 +1880,7 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
-  BlueBreeze: 71b50196a307ab961d0a759c65362fa5ad43df0c
+  BlueBreeze: e94000c14dc4fac58ac3316d1208c2f1540630b0
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   fast_float: 06eeec4fe712a76acc9376682e4808b05ce978b6
@@ -1917,7 +1917,7 @@ SPEC CHECKSUMS:
   React-logger: e7eeebaed32b88dcc29b10901aa8c5822dc397c4
   React-Mapbuffer: 73dd1210c4ecf0dfb4e2d4e06f2a13f824a801a9
   React-microtasksnativemodule: d03753688e2abf135edcd4160ab3ce7526da8b0d
-  react-native-bluebreeze: b39be2469f84b8b47398dd5ae48daca0d8f22f01
+  react-native-bluebreeze: 5ee0fee943c065ec139a88b69b0661e3baafce60
   react-native-safe-area-context: 7e513d737b0b5c1d10bbe0e5fcc9f925a7be144c
   React-nativeconfig: cb207ebba7cafce30657c7ad9f1587a8f32e4564
   React-NativeModulesApple: 8411d548b1ad9d2b3e597beb9348e715c8020e0c

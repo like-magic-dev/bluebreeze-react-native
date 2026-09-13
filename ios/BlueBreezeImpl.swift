@@ -111,28 +111,30 @@ struct BlueBreezeError : Error {
             .store(in: &disposeBagDevices[device.id]!)
     }
 
-    private func subscribeServices(_ device: BBDevice, _ services: [BBUUID: [BBCharacteristic]]) {
+    private func subscribeServices(_ device: BBDevice, _ services: [BBService]) {
         // Clean up device data by removing missing services
         disposeBagServices[device.id] =
             disposeBagServices[device.id]?.filter({ key, value in
-                services[key] != nil
+                services.contains(where: { $0.uuid == key })
             }) ?? [:]
 
         // Init all existing services
-        services.forEach { serviceId, value in
+        services.forEach { service in
+            let serviceId = service.uuid
+
             // Clean up service data by removing missing characteristics
             disposeBagServices[device.id]![serviceId] =
                 disposeBagServices[device.id]![serviceId]?.filter({ key, _ in
-                    value.first(where: { $0.id == key }) != nil
+                    service.characteristics.first(where: { $0.uuid == key }) != nil
                 }) ?? [:]
 
             // Init all existing characteristics
-            value.forEach { characteristic in
-                guard disposeBagServices[device.id]![serviceId]![characteristic.id] == nil else {
+            service.characteristics.forEach { characteristic in
+                guard disposeBagServices[device.id]![serviceId]![characteristic.uuid] == nil else {
                     return
                 }
 
-                disposeBagServices[device.id]![serviceId]![characteristic.id] = []
+                disposeBagServices[device.id]![serviceId]![characteristic.uuid] = []
 
                 characteristic.isNotifying
                     .receive(on: DispatchQueue.main)
@@ -140,11 +142,11 @@ struct BlueBreezeError : Error {
                         self.deviceCharacteristicNotifyEnabledObserve?(
                             device.id.toJs,
                             serviceId.toJs,
-                            characteristic.id.toJs,
+                            characteristic.uuid.toJs,
                             $0
                         )
                     }
-                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
 
                 characteristic.data
                     .receive(on: DispatchQueue.main)
@@ -152,11 +154,11 @@ struct BlueBreezeError : Error {
                         self.deviceCharacteristicDataObserve?(
                             device.id.toJs,
                             serviceId.toJs,
-                            characteristic.id.toJs,
-                            $0.toJs
+                            characteristic.uuid.toJs,
+                            $0?.toJs ?? []
                         )
                     }
-                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.id]!)
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
             }
         }
     }
@@ -307,8 +309,10 @@ struct BlueBreezeError : Error {
         guard let device = manager.devices.value[uuid] else {
             throw BlueBreezeError(description: "Device not found")
         }
-        
-        try await device.requestMTU(mtu)
+
+        // CoreBluetooth has no API to request a specific MTU value. negotiateMTU() only reads
+        // back whatever value it auto-negotiated on connect, so `mtu` is ignored on iOS.
+        try await device.negotiateMTU()
     }
     
     // MARK: - Device characteristic data
@@ -326,7 +330,7 @@ struct BlueBreezeError : Error {
             return []
         }
 
-        return characteristic.data.value.toJs
+        return characteristic.data.value?.toJs ?? []
     }
     
     // MARK: - Device notify enabled
@@ -419,8 +423,8 @@ struct BlueBreezeError : Error {
 
 extension BBDevice {
     func getCharacteristic(serviceId: String, characteristicId: String) -> BBCharacteristic? {
-        let service = services.value.first { $0.key == BBUUID(string: serviceId)}
-        let characteristic = service?.value.first { $0.id == BBUUID(string: characteristicId) }
+        let service = services.value.first { $0.uuid == BBUUID(string: serviceId) }
+        let characteristic = service?.characteristics.first { $0.uuid == BBUUID(string: characteristicId) }
         return characteristic
     }
 }
@@ -509,8 +513,8 @@ extension BBDeviceConnectionStatus {
 extension BBCharacteristic {
     var toJs: [String: Any] {
         [
-            "id": id.uuidString,
-            "name": BBConstants.knownCharacteristics[id] as Any,
+            "id": uuid.uuidString,
+            "name": BBAssignedNumbers.characteristicUUIDs[uuid] as Any,
             "properties": properties.map { $0.toJs }
         ]
     }
@@ -522,13 +526,13 @@ extension [BBCharacteristic] {
     }
 }
 
-extension [BBUUID: [BBCharacteristic]] {
+extension [BBService] {
     var toJs: [[String: Any]] {
         map {
             [
-                "id": $0.key.uuidString,
-                "name": BBConstants.knownServices[$0.key] as Any,
-                "characteristics": $0.value.toJs
+                "id": $0.uuid.uuidString,
+                "name": BBAssignedNumbers.serviceUUIDs[$0.uuid] as Any,
+                "characteristics": $0.characteristics.toJs
             ]
         }
     }

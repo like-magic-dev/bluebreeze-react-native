@@ -289,7 +289,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
         async {
             try {
-                val result = device.requestMTU(mtu.toInt())
+                val result = device.requestMtu(mtu.toInt())
                 promise?.resolve(result)
             } catch (e: Throwable) {
                 promise?.reject(e)
