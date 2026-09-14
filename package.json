@@ -42,8 +42,7 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build",
-    "release": "release-it --no-increment"
+    "prepare": "bob build"
   },
   "keywords": [
     "react-native",
@@ -86,7 +85,6 @@
     "react": "18.3.1",
     "react-native": "0.87.1",
     "react-native-builder-bob": "^0.43.1",
-    "release-it": "^18.1.2",
     "turbo": "^2.4.2",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.24.1"
@@ -116,18 +114,6 @@
     "extends": [
       "@commitlint/config-conventional"
     ]
-  },
-  "release-it": {
-    "git": {
-      "commitMessage": "chore: release ${version}",
-      "tagName": "v${version}"
-    },
-    "npm": {
-      "publish": true
-    },
-    "github": {
-      "release": true
-    }
   },
   "eslintConfig": {
     "root": true,
