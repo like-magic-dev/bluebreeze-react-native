@@ -34,11 +34,33 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
     val context: Context
         get() = getCurrentActivity() ?: reactApplicationContext
 
-    private val trackedDeviceServices = mutableSetOf<String>()
-    private val trackedDeviceConnectionStatus = mutableSetOf<String>()
-    private val trackedDeviceMTU = mutableSetOf<String>()
-    private val trackedDeviceCharacteristicData = mutableSetOf<String>()
-    private val trackedDeviceCharacteristicNotifyEnabled = mutableSetOf<String>()
+    // Per-device subscriptions
+
+    private class DeviceTracking {
+        // Subscriptions to device.services/connectionStatus/mtu, set up once per device
+        val deviceJobs = mutableListOf<Job>()
+
+        // Per characteristic data and notification state subscriptions
+        val characteristicDataJobs = mutableMapOf<String, Job>()
+        val characteristicNotificationJobs = mutableMapOf<String, Job>()
+
+        fun cancelCharacteristics() {
+            characteristicDataJobs.values.forEach { it.cancel() }
+            characteristicDataJobs.clear()
+
+            characteristicNotificationJobs.values.forEach { it.cancel() }
+            characteristicNotificationJobs.clear()
+        }
+
+        fun cancelAll() {
+            cancelCharacteristics()
+
+            deviceJobs.forEach { it.cancel() }
+            deviceJobs.clear()
+        }
+    }
+
+    private val deviceTracking = mutableMapOf<String, DeviceTracking>()
 
     // Lifecycle
 
@@ -84,93 +106,93 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                 )
             }
 
+            // Tear down tracking for devices that dropped out of the map
+            deviceTracking.keys.minus(devices.keys).forEach { deviceId ->
+                deviceTracking.remove(deviceId)?.cancelAll()
+            }
+
             for ((deviceId, device) in devices) {
-                // Device services
-                if (trackedDeviceServices.contains(deviceId).not()) {
-                    trackedDeviceServices.add(deviceId)
-                    device.services.collectAsync { services ->
-                        safeEmit {
-                            emitDeviceServicesEmitter(
-                                writableMapOf(
-                                    "id" to deviceId,
-                                    "value" to services.map { it.toJs }
-                                )
+                val tracking = deviceTracking.getOrPut(deviceId) { DeviceTracking() }
+                setupDeviceTracking(deviceId, device, tracking)
+            }
+        }
+    }
+
+    // Device services/connectionStatus/mtu are stable flows on the same BBDevice instance for
+    // its whole lifetime, so we only register these collectors once per device.
+    private fun setupDeviceTracking(deviceId: String, device: BBDevice, tracking: DeviceTracking) {
+        if (tracking.deviceJobs.isNotEmpty()) return
+
+        tracking.deviceJobs += device.services.collectAsync { services ->
+            safeEmit {
+                emitDeviceServicesEmitter(
+                    writableMapOf(
+                        "id" to deviceId,
+                        "value" to services.map { it.toJs }
+                    )
+                )
+            }
+
+            setupDeviceCharacteristics(deviceId, services, tracking)
+        }
+
+        tracking.deviceJobs += device.connectionStatus.collectAsync { value ->
+            safeEmit {
+                emitDeviceConnectionStatusEmitter(
+                    writableMapOf(
+                        "id" to deviceId,
+                        "value" to value.toJs,
+                    )
+                )
+            }
+        }
+
+        tracking.deviceJobs += device.mtu.collectAsync { value ->
+            safeEmit {
+                emitDeviceMTUEmitter(
+                    writableMapOf(
+                        "id" to deviceId,
+                        "value" to value,
+                    )
+                )
+            }
+        }
+    }
+
+    // BBCharacteristics are not stable instances, so we rebuild the collectors every time
+    // services are updated.
+    private fun setupDeviceCharacteristics(deviceId: String, services: List<BBService>, tracking: DeviceTracking) {
+        tracking.cancelCharacteristics()
+
+        services.forEach { service ->
+            val serviceId = service.uuid
+            service.characteristics.forEach { characteristic ->
+                val characteristicId = characteristic.uuid
+                val trackingKey = "${serviceId}:${characteristicId}"
+
+                tracking.characteristicDataJobs[trackingKey] = characteristic.data.collectAsync { value ->
+                    safeEmit {
+                        emitDeviceCharacteristicDataEmitter(
+                            writableMapOf(
+                                "id" to deviceId,
+                                "serviceId" to serviceId.toJs,
+                                "characteristicId" to characteristicId.toJs,
+                                "value" to value.toJs
                             )
-                        }
-
-                        services.forEach { service ->
-                            val serviceId = service.uuid
-                            service.characteristics.forEach { characteristic ->
-                                val characteristicId = characteristic.uuid
-                                val trackingKey = "${deviceId}:${serviceId}:${characteristicId}"
-
-                                // Device characteristic data
-                                if (trackedDeviceCharacteristicData.contains(trackingKey).not()) {
-                                    trackedDeviceCharacteristicData.add(trackingKey)
-                                    characteristic.data.collectAsync { value ->
-                                        safeEmit {
-                                            emitDeviceCharacteristicDataEmitter(
-                                                writableMapOf(
-                                                    "id" to deviceId,
-                                                    "serviceId" to serviceId.toJs,
-                                                    "characteristicId" to characteristicId.toJs,
-                                                    "value" to value.toJs
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-
-                                // Device characteristic notify enabled
-                                if (trackedDeviceCharacteristicNotifyEnabled.contains(trackingKey)
-                                        .not()
-                                ) {
-                                    trackedDeviceCharacteristicNotifyEnabled.add(trackingKey)
-                                    characteristic.isNotifying.collectAsync { value ->
-                                        safeEmit {
-                                            emitDeviceCharacteristicNotifyEnabledEmitter(
-                                                writableMapOf(
-                                                    "id" to deviceId,
-                                                    "serviceId" to serviceId.toJs,
-                                                    "characteristicId" to characteristicId.toJs,
-                                                    "value" to value
-                                                )
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        )
                     }
                 }
 
-                // Device connection status
-                if (trackedDeviceConnectionStatus.contains(deviceId).not()) {
-                    trackedDeviceConnectionStatus.add(deviceId)
-                    device.connectionStatus.collectAsync { value ->
-                        safeEmit {
-                            emitDeviceConnectionStatusEmitter(
-                                writableMapOf(
-                                    "id" to deviceId,
-                                    "value" to value.toJs,
-                                )
+                tracking.characteristicNotificationJobs[trackingKey] = characteristic.isNotifying.collectAsync { value ->
+                    safeEmit {
+                        emitDeviceCharacteristicNotifyEnabledEmitter(
+                            writableMapOf(
+                                "id" to deviceId,
+                                "serviceId" to serviceId.toJs,
+                                "characteristicId" to characteristicId.toJs,
+                                "value" to value
                             )
-                        }
-                    }
-                }
-
-                // Device MTU
-                if (trackedDeviceMTU.contains(deviceId).not()) {
-                    trackedDeviceMTU.add(deviceId)
-                    device.mtu.collectAsync { value ->
-                        safeEmit {
-                            emitDeviceMTUEmitter(
-                                writableMapOf(
-                                    "id" to deviceId,
-                                    "value" to value,
-                                )
-                            )
-                        }
+                        )
                     }
                 }
             }
@@ -179,6 +201,10 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
     override fun invalidate() {
         super.invalidate()
+
+        deviceTracking.values.forEach { it.cancelAll() }
+        deviceTracking.clear()
+        
         moduleScope.cancel()
     }
 
