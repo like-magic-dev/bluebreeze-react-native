@@ -64,7 +64,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "dependencies": {
-    "react-native-value-emitter": "^1.0.0"
+    "react-native-value-emitter": "^1.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
