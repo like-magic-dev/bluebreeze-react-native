@@ -556,7 +556,6 @@ val BBState.toJs: String
         BBState.unknown -> "unknown"
         BBState.poweredOff -> "poweredOff"
         BBState.poweredOn -> "poweredOn"
-        BBState.unauthorized -> "unauthorized"
     }
 
 val BBCharacteristicProperty.toJs: String
