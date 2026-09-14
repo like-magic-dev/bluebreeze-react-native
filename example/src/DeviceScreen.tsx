@@ -1,13 +1,14 @@
-import { useNavigation } from '@react-navigation/native'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useEffect, useState } from 'react'
 import { Button, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native'
 import BlueBreeze from 'react-native-bluebreeze'
 import type { BBService } from '../../src/implementation/bluebreeze_service'
 import CharacteristicScreen from './CharacteristicScreen'
+import type { RootStackParamList } from './navigation'
 
-export default function DeviceScreen({ route }) {
-    const navigation = useNavigation()
+type Props = NativeStackScreenProps<RootStackParamList, 'Device'>
 
+export default function DeviceScreen({ route, navigation }: Props) {
     // Get the device
     const { deviceId } = route.params
     const device = BlueBreeze.devices.value?.get(deviceId)

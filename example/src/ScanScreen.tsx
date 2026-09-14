@@ -1,11 +1,13 @@
 import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useEffect, useState } from 'react'
 import { Button, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import BlueBreeze from 'react-native-bluebreeze'
 import type { BBScanResult } from '../../src/implementation/bluebreeze_scan_result'
+import type { RootStackParamList } from './navigation'
 
 export default function ScanScreen() {
-    const navigation = useNavigation()
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
 
     // Scanning status
 
