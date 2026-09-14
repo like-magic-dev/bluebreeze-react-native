@@ -83,4 +83,7 @@ ios/generated
 android/generated
 .yarn
 
+# Python
+__pycache__/
+
 .env
