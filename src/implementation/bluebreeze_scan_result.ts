@@ -1,5 +1,8 @@
 import type { BBDevice } from "./bluebreeze_device"
 
+/**
+ * A single BLE advertisement seen while scanning. 
+ */
 export class BBScanResult {
     constructor(
         device: BBDevice,
@@ -21,12 +24,27 @@ export class BBScanResult {
         this.manufacturerData = manufacturerData
     }
 
+    /** The device that sent this advertisement. */
     device: BBDevice
+
+    /** The advertised local name, if any. Falls back to {@link device}'s name. */
     name?: string
+
+    /** Received signal strength, in dBm. */
     rssi: number
+
+    /** Whether this advertisement indicates the device currently accepts connections. */
     connectable: boolean
+
+    /** Service UUIDs included in this advertisement. */
     advertisedServices: string[]
+
+    /** The Bluetooth SIG-assigned company identifier for manufacturer-specific data, if present. */
     manufacturerId?: number
+
+    /** A human-readable name for {@link manufacturerId}, if recognized. */
     manufacturerName?: string
+
+    /** Raw manufacturer-specific advertisement data, if present. */
     manufacturerData?: number[]
 }
