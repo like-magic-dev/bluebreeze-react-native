@@ -22,6 +22,13 @@ def isNewArchitectureEnabled() {
 
 apply plugin: "com.android.library"
 
+// Some AGP versions register their own "kotlin" extension. We only apply
+// the Kotlin Gradle plugin if that hasn't already happened, to avoid 
+// "Cannot add extension with name 'kotlin'" failures.
+if (project.extensions.findByName("kotlin") == null) {
+  apply plugin: "kotlin-android"
+}
+
 if (isNewArchitectureEnabled()) {
   apply plugin: "com.facebook.react"
 }
