@@ -601,6 +601,7 @@ val BBCharacteristicProperty.toJs: String
 val BBScanResult.toJs: WritableMap
     get() = writableMapOf(
         "id" to device.address,
+        "name" to name,
         "rssi" to rssi,
         "connectable" to connectable,
         "advertisedServices" to advertisedServices.map { it.toJs },
