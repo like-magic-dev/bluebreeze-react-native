@@ -107,7 +107,7 @@ dependencies {
   implementation "com.facebook.react:react-android"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-  implementation "dev.likemagic:bluebreeze:1.0.1"
+  implementation "dev.likemagic:bluebreeze:1.0.3"
 }
 
 if (isNewArchitectureEnabled()) {
