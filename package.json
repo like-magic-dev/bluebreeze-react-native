@@ -1,6 +1,6 @@
 {
   "name": "react-native-bluebreeze",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "BlueBreeze bindings for React Native. A modern Bluetooth LE library.",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
@@ -42,7 +42,8 @@
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
     "clean": "del-cli android/build example/android/build example/android/app/build example/ios/build lib",
-    "prepare": "bob build"
+    "prepare": "bob build",
+    "codegen": "bob build --target codegen"
   },
   "keywords": [
     "react-native",

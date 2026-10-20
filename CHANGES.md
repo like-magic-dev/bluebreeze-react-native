@@ -1,6 +1,11 @@
+# 1.0.2
+
+- Add `notifications` property to `BBCharacteristic` as a pure data stream without replay.
+- Fix missing names for Android scan results.
+
 # 1.0.1
 
-Fixed a regression in the Android build.
+- Fix a regression in the Android build.
 
 # 1.0.0
 
