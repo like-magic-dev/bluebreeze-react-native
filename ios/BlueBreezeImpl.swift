@@ -30,7 +30,8 @@ struct BlueBreezeError : Error {
     var deviceMTUObserve: ((String, Int) -> Void)?
     var deviceCharacteristicDataObserve: ((String, String, String, Array<UInt8>) -> Void)?
     var deviceCharacteristicNotifyEnabledObserve: ((String, String, String, Bool) -> Void)?
-    
+    var deviceCharacteristicNotificationsObserve: ((String, String, String, Array<UInt8>) -> Void)?
+
     @objc public func subscribe(
         stateObserve: (@escaping (String) -> Void),
         authorizationObserve: (@escaping (String) -> Void),
@@ -41,7 +42,8 @@ struct BlueBreezeError : Error {
         deviceServicesObserve: (@escaping (String, [[String: Any]]) -> Void),
         deviceMTUObserve: (@escaping (String, Int) -> Void),
         deviceCharacteristicDataObserve: (@escaping (String, String, String, Array<UInt8>) -> Void),
-        deviceCharacteristicNotifyEnabledObserve: (@escaping (String, String, String, Bool) -> Void)
+        deviceCharacteristicNotifyEnabledObserve: (@escaping (String, String, String, Bool) -> Void),
+        deviceCharacteristicNotificationsObserve: (@escaping (String, String, String, Array<UInt8>) -> Void)
     ) {
         self.stateObserve = stateObserve
         self.authorizationObserve = authorizationObserve
@@ -53,6 +55,7 @@ struct BlueBreezeError : Error {
         self.deviceMTUObserve = deviceMTUObserve
         self.deviceCharacteristicDataObserve = deviceCharacteristicDataObserve
         self.deviceCharacteristicNotifyEnabledObserve = deviceCharacteristicNotifyEnabledObserve
+        self.deviceCharacteristicNotificationsObserve = deviceCharacteristicNotificationsObserve
 
         manager.state
             .receive(on: DispatchQueue.main)
@@ -136,6 +139,18 @@ struct BlueBreezeError : Error {
 
                 disposeBagServices[device.id]![serviceId]![characteristic.uuid] = []
 
+                characteristic.data
+                    .receive(on: DispatchQueue.main)
+                    .sink {
+                        self.deviceCharacteristicDataObserve?(
+                            device.id.toJs,
+                            serviceId.toJs,
+                            characteristic.uuid.toJs,
+                            $0?.toJs ?? []
+                        )
+                    }
+                    .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
+
                 characteristic.isNotifying
                     .receive(on: DispatchQueue.main)
                     .sink {
@@ -148,14 +163,14 @@ struct BlueBreezeError : Error {
                     }
                     .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)
 
-                characteristic.data
+                characteristic.notifications
                     .receive(on: DispatchQueue.main)
                     .sink {
-                        self.deviceCharacteristicDataObserve?(
+                        self.deviceCharacteristicNotificationsObserve?(
                             device.id.toJs,
                             serviceId.toJs,
                             characteristic.uuid.toJs,
-                            $0?.toJs ?? []
+                            $0.toJs
                         )
                     }
                     .store(in: &disposeBagServices[device.id]![serviceId]![characteristic.uuid]!)

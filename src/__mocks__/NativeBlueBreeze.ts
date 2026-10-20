@@ -75,6 +75,9 @@ export function resetNativeBlueBreezeMock(): void {
     mock.deviceCharacteristicData.mockReset().mockReturnValue([])
     mock.deviceCharacteristicDataEmitter.mockClear()
 
+    mock.deviceCharacteristicNotifications.mockReset().mockReturnValue([])
+    mock.deviceCharacteristicNotificationsEmitter.mockClear()
+
     mock.deviceCharacteristicRead.mockReset().mockResolvedValue([])
     mock.deviceCharacteristicWrite.mockReset().mockResolvedValue(undefined)
     mock.deviceCharacteristicSubscribe.mockReset().mockResolvedValue(undefined)
@@ -118,6 +121,9 @@ const mock = {
 
     deviceCharacteristicData: jest.fn((): number[] => []),
     deviceCharacteristicDataEmitter: makeEmitter('deviceCharacteristicData'),
+
+    deviceCharacteristicNotifications: jest.fn((): number[] => []),
+    deviceCharacteristicNotificationsEmitter: makeEmitter('deviceCharacteristicNotifications'),
 
     deviceCharacteristicRead: jest.fn((): Promise<number[]> => Promise.resolve([])),
     deviceCharacteristicWrite: jest.fn(() => Promise.resolve()),

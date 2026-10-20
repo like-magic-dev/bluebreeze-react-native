@@ -1,6 +1,7 @@
-import type { StateValueEmitter } from "react-native-value-emitter"
+import type { StateValueEmitter, ValueEmitter } from "react-native-value-emitter"
 import {
     deviceCharacteristicData,
+    deviceCharacteristicNotifications,
     deviceCharacteristicNotifyEnabled,
     deviceCharacteristicRead,
     deviceCharacteristicSubscribe,
@@ -27,7 +28,9 @@ export class BBCharacteristic {
         this.properties = properties
 
         this.data = deviceCharacteristicData(deviceId, serviceId, id)
+
         this.notifyEnabled = deviceCharacteristicNotifyEnabled(deviceId, serviceId, id)
+        this.notifications = deviceCharacteristicNotifications(deviceId, serviceId, id)
 
         this.read = () => deviceCharacteristicRead(deviceId, serviceId, id)
         this.write = (data: number[], withResponse: boolean) => deviceCharacteristicWrite(deviceId, serviceId, id, data, withResponse)
@@ -44,11 +47,15 @@ export class BBCharacteristic {
     /** The GATT properties this characteristic declares. */
     properties: string[]
 
-    /** The last value read or notified for this characteristic. Empty until first populated. */
+    /** The last value read or notified for this characteristic, replays the most recent value. 
+      * Empty until first populated. */
     data: StateValueEmitter<number[]>
 
     /** Whether this app is currently subscribed to notifications for this characteristic. */
     notifyEnabled: StateValueEmitter<boolean>
+
+    /** The notification stream for this characteristic. Does not replay past values. */
+    notifications: ValueEmitter<number[]>
 
     /**
      * Reads this characteristic's current value, also updating {@link data}.

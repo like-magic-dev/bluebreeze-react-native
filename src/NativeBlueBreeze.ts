@@ -61,6 +61,13 @@ export interface BBDeviceCharacteristicNotifyEnabledEvent {
     value: boolean
 }
 
+export interface BBDeviceCharacteristicNotificationsEvent {
+    id: string
+    serviceId: string
+    characteristicId: string
+    value: number[]
+}
+
 /// Module specifications
 
 export interface Spec extends TurboModule {
@@ -110,6 +117,10 @@ export interface Spec extends TurboModule {
     // Device characteristic notify enabled
     deviceCharacteristicNotifyEnabled(id: string, serviceId: string, characteristicId: string): boolean
     readonly deviceCharacteristicNotifyEnabledEmitter: EventEmitter<BBDeviceCharacteristicNotifyEnabledEvent>
+
+    // Device characteristic notifications
+    deviceCharacteristicNotifications(id: string, serviceId: string, characteristicId: string): number[]
+    readonly deviceCharacteristicNotificationsEmitter: EventEmitter<BBDeviceCharacteristicNotificationsEvent>
 
     // Device characteristic operations
     deviceCharacteristicRead(id: string, serviceId: string, characteristicId: string): Promise<number[]>

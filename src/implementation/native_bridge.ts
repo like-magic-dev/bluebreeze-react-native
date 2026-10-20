@@ -1,4 +1,4 @@
-import { StateValueEmitter } from 'react-native-value-emitter'
+import { StateValueEmitter, ValueEmitter } from 'react-native-value-emitter'
 import NativeBlueBreeze, { type SpecDeviceCharacteristic, type SpecDeviceService } from '../NativeBlueBreeze'
 import { BBCharacteristic } from './bluebreeze_characteristic'
 import type { BBDeviceConnectionStatus } from './bluebreeze_connection_status'
@@ -88,6 +88,40 @@ export const deviceDiscoverServices = NativeBlueBreeze.deviceDiscoverServices
 
 export const deviceRequestMTU = NativeBlueBreeze.deviceRequestMTU
 
+// Device characteristic data
+
+const _deviceCharacteristicData = new Map<string, Map<string, Map<string, StateValueEmitter<number[]>>>>()
+
+export const deviceCharacteristicData = (
+    id: string,
+    serviceId: string,
+    characteristicId: string
+): StateValueEmitter<number[]> => {
+    const deviceMap = mapGetOrSet(
+        _deviceCharacteristicData,
+        id,
+        () => new Map<string, Map<string, StateValueEmitter<number[]>>>()
+    )
+
+    const serviceMap = mapGetOrSet(
+        deviceMap,
+        serviceId,
+        () => new Map<string, StateValueEmitter<number[]>>()
+    )
+
+    return mapGetOrSet(
+        serviceMap,
+        characteristicId,
+        () => new StateValueEmitter<number[]>(
+            NativeBlueBreeze.deviceCharacteristicData(id, serviceId, characteristicId)
+        )
+    )
+}
+
+NativeBlueBreeze.deviceCharacteristicDataEmitter((value) => {
+    deviceCharacteristicData(value.id, value.serviceId, value.characteristicId).add(value.value)
+})
+
 // Device characteristic notify enabled
 
 const _deviceCharacteristicNotifyEnabled = new Map<string, Map<string, Map<string, StateValueEmitter<boolean>>>>()
@@ -122,38 +156,36 @@ NativeBlueBreeze.deviceCharacteristicNotifyEnabledEmitter((value) => {
     deviceCharacteristicNotifyEnabled(value.id, value.serviceId, value.characteristicId).add(value.value)
 })
 
-// Device characteristic data
+// Device characteristic notifications
 
-const _deviceCharacteristicData = new Map<string, Map<string, Map<string, StateValueEmitter<number[]>>>>()
+const _deviceCharacteristicNotifications = new Map<string, Map<string, Map<string, ValueEmitter<number[]>>>>()
 
-export const deviceCharacteristicData = (
+export const deviceCharacteristicNotifications = (
     id: string,
     serviceId: string,
     characteristicId: string
-): StateValueEmitter<number[]> => {
+): ValueEmitter<number[]> => {
     const deviceMap = mapGetOrSet(
-        _deviceCharacteristicData,
+        _deviceCharacteristicNotifications,
         id,
-        () => new Map<string, Map<string, StateValueEmitter<number[]>>>()
+        () => new Map<string, Map<string, ValueEmitter<number[]>>>()
     )
 
     const serviceMap = mapGetOrSet(
         deviceMap,
         serviceId,
-        () => new Map<string, StateValueEmitter<number[]>>()
+        () => new Map<string, ValueEmitter<number[]>>()
     )
 
     return mapGetOrSet(
         serviceMap,
         characteristicId,
-        () => new StateValueEmitter<number[]>(
-            NativeBlueBreeze.deviceCharacteristicData(id, serviceId, characteristicId)
-        )
+        () => new ValueEmitter<number[]>()
     )
 }
 
-NativeBlueBreeze.deviceCharacteristicDataEmitter((value) => {
-    deviceCharacteristicData(value.id, value.serviceId, value.characteristicId).add(value.value)
+NativeBlueBreeze.deviceCharacteristicNotificationsEmitter((value) => {
+    deviceCharacteristicNotifications(value.id, value.serviceId, value.characteristicId).add(value.value)
 })
 
 // Device characteristic operations

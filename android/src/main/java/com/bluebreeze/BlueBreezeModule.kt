@@ -23,6 +23,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -42,14 +43,18 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
 
         // Per characteristic data and notification state subscriptions
         val characteristicDataJobs = mutableMapOf<String, Job>()
-        val characteristicNotificationJobs = mutableMapOf<String, Job>()
+        val characteristicIsNotifyingJobs = mutableMapOf<String, Job>()
+        val characteristicNotificationsJobs = mutableMapOf<String, Job>()
 
         fun cancelCharacteristics() {
             characteristicDataJobs.values.forEach { it.cancel() }
             characteristicDataJobs.clear()
 
-            characteristicNotificationJobs.values.forEach { it.cancel() }
-            characteristicNotificationJobs.clear()
+            characteristicIsNotifyingJobs.values.forEach { it.cancel() }
+            characteristicIsNotifyingJobs.clear()
+
+            characteristicNotificationsJobs.values.forEach { it.cancel() }
+            characteristicNotificationsJobs.clear()
         }
 
         fun cancelAll() {
@@ -183,7 +188,7 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                     }
                 }
 
-                tracking.characteristicNotificationJobs[trackingKey] = characteristic.isNotifying.collectAsync { value ->
+                tracking.characteristicIsNotifyingJobs[trackingKey] = characteristic.isNotifying.collectAsync { value ->
                     safeEmit {
                         emitDeviceCharacteristicNotifyEnabledEmitter(
                             writableMapOf(
@@ -191,6 +196,19 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
                                 "serviceId" to serviceId.toJs,
                                 "characteristicId" to characteristicId.toJs,
                                 "value" to value
+                            )
+                        )
+                    }
+                }
+
+                tracking.characteristicNotificationsJobs[trackingKey] = characteristic.notifications.collectAsync { value ->
+                    safeEmit {
+                        emitDeviceCharacteristicNotificationsEmitter(
+                            writableMapOf(
+                                "id" to deviceId,
+                                "serviceId" to serviceId.toJs,
+                                "characteristicId" to characteristicId.toJs,
+                                "value" to value.toJs
                             )
                         )
                     }
@@ -354,6 +372,16 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
             it.uuid.toString() == characteristicId
         } ?: return false
         return characteristic.isNotifying.value
+    }
+
+    // Device characteristic notifications
+
+    override fun deviceCharacteristicNotifications(
+        id: String?,
+        serviceId: String?,
+        characteristicId: String?
+    ): WritableArray? {
+        return emptyWritableArray()
     }
 
     // Device characteristic operations
@@ -525,6 +553,10 @@ class BlueBreezeModule(reactContext: ReactApplicationContext) : NativeBlueBreeze
     private fun async(
         block: suspend CoroutineScope.() -> Unit,
     ): Job = moduleScope.launch(block = block)
+
+    private fun <T> Flow<T>.collectAsync(
+        collector: FlowCollector<T>,
+    ): Job = moduleScope.launch { collect(collector) }
 
     private fun <T> SharedFlow<T>.collectAsync(
         collector: FlowCollector<T>,

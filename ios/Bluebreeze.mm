@@ -83,6 +83,15 @@ typedef void (^EmitterCallback)();
                 @"value": [NSNumber numberWithBool:value]
             }];
         }];
+    } deviceCharacteristicNotificationsObserve:^(NSString * _Nonnull deviceId, NSString * _Nonnull serviceId, NSString * _Nonnull characteristicId, NSArray<NSNumber *> * _Nonnull value) {
+        [self wrapEventEmitter:^{
+            [self emitDeviceCharacteristicNotificationsEmitter:@{
+                @"id": deviceId,
+                @"serviceId": serviceId,
+                @"characteristicId": characteristicId,
+                @"value": value
+            }];
+        }];
     }];
     
 }
